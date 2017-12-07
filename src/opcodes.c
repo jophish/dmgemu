@@ -1,3 +1,7 @@
 #include "opcodes.h"
 
-void dispatch_op(uint16_t);
+void dispatch_op(uint16_t) {
+
+
+
+}

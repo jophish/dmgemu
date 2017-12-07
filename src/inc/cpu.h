@@ -22,103 +22,99 @@ typedef struct cpu {
   clock clk;
 } cpu;
 
-// Here's our main cpu instance
-cpu z80;
-
 // Initializes registers to default values for DMG
 // AF = 01B0h, BC = 0013h, DE = 00D8h
 // HL = 014Dh, SP = FFFEh, PC = 0100h
-void init_cpu();
+void init_cpu(cpu *z80);
 
 // Prints the registers in the processor instance.
 // If width == 1, prints 16-bit regs instead of 8-bit
-void print_regs(bool width);
+void print_regs(cpu *z80, bool width);
 
 // Prints individual flags
-void print_flags();
+void print_flags(cpu *z80);
 
 
 // Macros for setting/getting 16-bit registers,
 // since the internal representation is 8-bit regs
-#define set_AF(val)({				\
+#define set_AF(z80, val)({			\
       uint16_t _val = (val);			\
-      z80.regs.a = (uint8_t)(_val >> 8);	\
-      z80.regs.f = (uint8_t)_val;})		\
+      z80->regs.a = (uint8_t)(_val >> 8);	\
+      z80->regs.f = (uint8_t)_val;})		\
 
-#define set_BC(val)({				\
+#define set_BC(z80, val)({			\
       uint16_t _val = (val);			\
-      z80.regs.b = (uint8_t)(_val >> 8);	\
-      z80.regs.c = (uint8_t)_val;})		\
-    
-#define set_DE(val)({				\
+      z80->regs.b = (uint8_t)(_val >> 8);	\
+      z80->regs.c = (uint8_t)_val;})		\
+
+#define set_DE(z80, val)({			\
       uint16_t _val = (val);			\
-      z80.regs.d = (uint8_t)(_val >> 8);	\
-      z80.regs.e = (uint8_t)_val;})		\
-    
-#define set_HL(val)({				\
+      z80->regs.d = (uint8_t)(_val >> 8);	\
+      z80->regs.e = (uint8_t)_val;})		\
+
+#define set_HL(z80, val)({			\
       uint16_t _val = (val);			\
-      z80.regs.h = (uint8_t)(_val >> 8);	\
-      z80.regs.l = (uint8_t)_val;})		\
+      z80->regs.h = (uint8_t)(_val >> 8);	\
+      z80->regs.l = (uint8_t)_val;})		\
 
 // We have a special setter for the F register since
 // the bottom four bits must always read zero
-#define set_F(val)({			      	\
+#define set_F(z80, val)({			\
   uint8_t _val = (val);				\
-  z80.regs.f = _val & (_val << 4);})		\
-
+  z80->regs.f = _val & (_val << 4);})		\
 
 // These ones are just for the sake of consistency
-#define set_SP(val)({				\
+#define set_SP(z80, val)({			\
       uint16_t _val = (val);			\
-      z80.regs.sp = _val;})			\
-  
-#define set_PC(val)({				\
+      z80->regs.sp = _val;})			\
+
+#define set_PC(z80, val)({			\
       uint16_t _val = (val);			\
-      z80.regs.pc = val;})			\
+      z80->regs.pc = _val;})			\
 
-#define get_AF()				\
-  ((uint16_t)(z80.regs.a) << 8) | z80.regs.f	\
+#define get_AF(z80)				\
+  ((uint16_t)(z80->regs.a) << 8) | z80->regs.f	\
 
-#define get_BC()				\
-  ((uint16_t)(z80.regs.b) << 8) | z80.regs.c	\
+#define get_BC(z80)				\
+  ((uint16_t)(z80->regs.b) << 8) | z80->regs.c	\
 
-#define get_DE()				\
-  ((uint16_t)(z80.regs.d) << 8) | z80.regs.e	\
+#define get_DE(z80)				\
+  ((uint16_t)(z80->regs.d) << 8) | z80->regs.e	\
 
-#define get_HL()				\
-  ((uint16_t)(z80.regs.h) << 8) | z80.regs.l	\
+#define get_HL(z80)				\
+  ((uint16_t)(z80->regs.h) << 8) | z80->regs.l	\
 
-#define get_SP() z80.regs.sp
+#define get_SP(z80) z80->regs.sp
 
-#define get_PC() z80.regs.pc
+#define get_PC(z80) z80->regs.pc
 // Macros for setting/getting flags in register F
 
-#define set_flag_Z(val)({						\
+#define set_flag_Z(z80, val)({						\
       bool _val = (val);						\
-      z80.regs.f = (z80.regs.f & (~(1 << 7))) | (_val << 7);})	\
+      z80->regs.f = (z80->regs.f & (~(1 << 7))) | (_val << 7);})	\
 
-#define set_flag_N(val)({						\
+#define set_flag_N(z80, val)({						\
       bool _val = (val);						\
-      z80.regs.f = (z80.regs.f & (~(1 << 6))) | (_val << 6);})	\
+      z80->regs.f = (z80->regs.f & (~(1 << 6))) | (_val << 6);})	\
 
-#define set_flag_H(val)({						\
+#define set_flag_H(z80, val)({						\
       bool _val = (val);						\
-      z80.regs.f = (z80.regs.f & (~(1 << 5))) | (_val << 5);})	\
+      z80->regs.f = (z80->regs.f & (~(1 << 5))) | (_val << 5);})	\
 
-#define set_flag_C(val)({						\
+#define set_flag_C(z80, val)({						\
       bool _val = (val);						\
-      z80.regs.f = (z80.regs.f & (~(1 << 4))) | (_val << 4);})	\
+      z80->regs.f = (z80->regs.f & (~(1 << 4))) | (_val << 4);})	\
 
-#define get_flag_Z()				\
-  ((z80.regs.f & (1 << 7)) >> 7)
+#define get_flag_Z(z80)				\
+  ((z80->regs.f & (1 << 7)) >> 7)
 
-#define get_flag_N()				\
-  ((z80.regs.f & (1 << 6)) >> 6)
+#define get_flag_N(z80)				\
+  ((z80->regs.f & (1 << 6)) >> 6)
 
-#define get_flag_H()				\
-  ((z80.regs.f & (1 << 5)) >> 5)
+#define get_flag_H(z80)				\
+  ((z80->regs.f & (1 << 5)) >> 5)
 
-#define get_flag_C()				\
-  ((z80.regs.f & (1 << 4)) >> 4)
+#define get_flag_C(z80)				\
+  ((z80->regs.f & (1 << 4)) >> 4)
 
 #endif /* CPU_H */
