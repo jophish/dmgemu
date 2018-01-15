@@ -137,6 +137,13 @@ uint16_t dispatch_op(emu *gb_emu_p) {
       (val_8 >> 4) == 0 ? set_flag_H(z80_p) : reset_flag_H(z80_p);
       set_PC(z80_p, pc+1);
       break;
+
+   // Control opcodes
+    case (DI) :
+      z80_p->clk.cpu_cycles += 4;
+      reset_flag_IE(z80_p);
+      set_PC(z80_p, pc+1);
+      break;
    default :
       printf("Current opcode %02x at ROM address 0x%04x not implemented.\n", opcode, pc);
       exit(0);

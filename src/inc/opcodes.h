@@ -71,4 +71,7 @@ uint16_t dispatch_op(emu *gb_emu_p);
 #define DEC_H 0x25
 #define DEC_L 0x2D
 #define DEC_IND_HL 0x35
+
+// Control
+#define DI 0xF3
 #endif /* OPCODES_H */

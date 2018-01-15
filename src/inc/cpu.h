@@ -12,6 +12,7 @@ registers and flags of the cpu*/
 typedef struct cpu_regs {
   uint8_t a, f, b, c, d, e, h, l;
   uint16_t sp, pc;
+  bool ie;
 } cpu_regs;
 
 typedef struct clock {
@@ -91,6 +92,13 @@ void print_flags(cpu *z80);
 #define get_SP(z80) z80->regs.sp
 
 #define get_PC(z80) z80->regs.pc
+
+// Macros for setting/resetting the interrupt enable register
+#define set_flag_IE(z80)({						\
+      z80->regs.ie = true;})						\
+
+#define reset_flag_IE(z80)({						\
+      z80->regs.ie = false;})						\
 
 // Macros for setting/resetting/getting flags in register F
 

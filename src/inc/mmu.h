@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "emu.h"
+#include "error.h"
 
 typedef uint16_t mem_addr;
 
@@ -23,6 +24,37 @@ void write_8(emu *gb_emu_p, mem_addr addr, uint8_t val);
 // read_16 were called on addr after the write, it would return "val" exactly.
 void write_16(emu *gb_emu_p, mem_addr addr, uint16_t val);
 
+// Given an address, returns the mem_region enum representing the
+// region of memory the address resides in
+int get_mem_region(mem_addr addr);
+
+// The MMU struct contains internal RAM banks and memory-mapped registers
+// that are accessed through the same memory-mapped interface as the cartridge
+// ROM. Eventually, this will be used to implement bank switching and MBC-x
+// cartridge features, as well as cartridge RAM.
+typedef struct mmu {
+  uint8_t IE_flag; // 0xFFFF - interrupt enable
+} mmu;
+
+// Enum for distinct regions of memory with different behaviors
+enum mem_region {
+  REGION_RES_INT_VEC,
+  REGION_CART_HEADER,
+  REGION_CART_ROM_BANK_0,
+  REGION_CART_ROM_BANK_SWITCH,
+  REGION_CHAR_RAM,
+  REGION_BG_MAP_DATA_1,
+  REGION_BG_MAP_DATA_2,
+  REGION_CART_RAM,
+  REGION_INTERNAL_RAM_0,
+  REGION_INTERNAL_RAM_SWITCH,
+  REGION_ECHO_RAM,
+  REGION_OAM,
+  REGION_RESERVED,
+  REGION_HW_IO_REGS,
+  REGION_ZERO_PAGE,
+  REGION_INT_ENABLE_FLAG,
+};
 
 // Definitions for borders in memory map
 // Memory mapped sections include the START address, but NOT the END address

@@ -9,6 +9,7 @@ void init_cpu(cpu *z80) {
   set_HL(z80, 0x014D);
   set_SP(z80, 0xFFFE);
   set_PC(z80, 0x0100);
+  set_flag_IE(z80);
 }
 
 void print_regs(cpu *z80, bool width) {
