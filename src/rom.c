@@ -21,9 +21,13 @@ void load_rom(rom *gb_rom, const char *name) {
   gb_rom->size = len;
 }
 
-void print_rom_bytes(rom *gb_rom, uint32_t start, uint32_t len) {
-  for (int i = start*2; i < len*2; i+=2) {
-    uint16_t val = (uint16_t)(gb_rom->data[i] << 8) | gb_rom->data[i+1];
-    printf("0x%04x: 0x%04x\n", i/2, val);
+void print_rom_bytes(rom *gb_rom, uint16_t start, uint16_t len) {
+  for (int i = start; i < start + len; i+=1) {
+    uint8_t val = gb_rom->data[i];
+    printf("0x%04x: 0x%02x\n", i, val);
   }
+}
+
+uint8_t get_rom_byte(rom *gb_rom, uint16_t start) {
+  return gb_rom->data[start];
 }

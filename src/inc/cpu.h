@@ -8,6 +8,7 @@ registers and flags of the cpu*/
 #include <stdint.h>
 #include <stdbool.h>
 
+
 typedef struct cpu_regs {
   uint8_t a, f, b, c, d, e, h, l;
   uint16_t sp, pc;
@@ -72,6 +73,9 @@ void print_flags(cpu *z80);
       uint16_t _val = (val);			\
       z80->regs.pc = _val;})			\
 
+#define inc_byte_PC(z80)({			\
+      z80->regs.pc += 1;})			\
+
 #define get_AF(z80)				\
   ((uint16_t)(z80->regs.a) << 8) | z80->regs.f	\
 
@@ -87,23 +91,32 @@ void print_flags(cpu *z80);
 #define get_SP(z80) z80->regs.sp
 
 #define get_PC(z80) z80->regs.pc
-// Macros for setting/getting flags in register F
 
-#define set_flag_Z(z80, val)({						\
-      bool _val = (val);						\
-      z80->regs.f = (z80->regs.f & (~(1 << 7))) | (_val << 7);})	\
+// Macros for setting/resetting/getting flags in register F
 
-#define set_flag_N(z80, val)({						\
-      bool _val = (val);						\
-      z80->regs.f = (z80->regs.f & (~(1 << 6))) | (_val << 6);})	\
+#define set_flag_Z(z80)({						\
+      z80->regs.f = z80->regs.f | (1 << 7);})				\
 
-#define set_flag_H(z80, val)({						\
-      bool _val = (val);						\
-      z80->regs.f = (z80->regs.f & (~(1 << 5))) | (_val << 5);})	\
+#define set_flag_N(z80)({						\
+      z80->regs.f = z80->regs.f | (1 << 6);})				\
 
-#define set_flag_C(z80, val)({						\
-      bool _val = (val);						\
-      z80->regs.f = (z80->regs.f & (~(1 << 4))) | (_val << 4);})	\
+#define set_flag_H(z80)({						\
+      z80->regs.f = z80->regs.f | (1 << 5);})				\
+
+#define set_flag_C(z80)({						\
+      z80->regs.f = z80->regs.f | (1 << 4);})				\
+
+#define reset_flag_Z(z80)({						\
+      z80->regs.f = z80->regs.f & ~(1 << 7);})				\
+
+#define reset_flag_N(z80)({						\
+      z80->regs.f = z80->regs.f & ~(1 << 6);})				\
+
+#define reset_flag_H(z80)({						\
+      z80->regs.f = z80->regs.f & ~(1 << 5);})				\
+
+#define reset_flag_C(z80)({						\
+      z80->regs.f = z80->regs.f & ~(1 << 4);})				\
 
 #define get_flag_Z(z80)				\
   ((z80->regs.f & (1 << 7)) >> 7)

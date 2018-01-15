@@ -17,6 +17,10 @@ unsigned char* load_file(const char *name, long *len_store);
 // populates a rom struct
 void load_rom(rom *gb_rom, const char *name);
 
-void print_rom_bytes(rom *gb_rom, uint32_t start, uint32_t len);
+// Prints bytes from the rom from the 'start'th byte to the 'start+len'th byte
+void print_rom_bytes(rom *gb_rom, uint16_t start, uint16_t len);
+
+// Returns the 'loc'th byte of the rom
+uint8_t get_rom_byte(rom *gb_rom, uint16_t loc);
 
 #endif /* ROM_H */
