@@ -17,12 +17,27 @@ uint16_t dispatch_op(emu *gb_emu_p);
 // Opcode definitions
 
 // 8-Bit Immediate Loads
+#define B8_LD_IV_A 0x3E
 #define B8_LD_IV_B 0x06
 #define B8_LD_IV_C 0x0E
 #define B8_LD_IV_D 0x16
 #define B8_LD_IV_E 0x1E
 #define B8_LD_IV_H 0x26
 #define B8_LD_IV_L 0x2E
+
+// LD A, n
+#define LD_A_A 0x7F
+#define LD_A_B 0x78
+#define LD_A_C 0x79
+#define LD_A_D 0x7A
+#define LD_A_E 0x7B
+#define LD_A_H 0x7C
+#define LD_A_L 0x7D
+#define LD_A_IND_BC 0x0A
+#define LD_A_IND_DE 0x1A
+#define LD_A_IND_HL 0x7E
+#define LD_A_IND_NN 0xFA
+
 
 // 16-Bit Immediate Loads
 #define B16_LD_IV_BC 0x01

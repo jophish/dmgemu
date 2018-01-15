@@ -11,6 +11,13 @@ uint16_t dispatch_op(emu *gb_emu_p) {
   switch(opcode) {
 
     // 8-Bit Immediate Loads
+    case (B8_LD_IV_A) :
+      // Load Immediate 8-bit value into A
+      z80_p->clk.cpu_cycles += 8;
+      val_8 = read_8(gb_emu_p, pc+1);
+      z80_p->regs.a = val_8;
+      set_PC(z80_p, pc+2);
+      break;
     case (B8_LD_IV_B) :
       z80_p->clk.cpu_cycles += 8;
       val_8 = read_8(gb_emu_p, pc+1);

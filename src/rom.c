@@ -8,7 +8,10 @@ unsigned char* load_file(const char *name, long *len_store) {
     long len = ftell(fl);
     unsigned char *ret = malloc(len);
     fseek(fl, 0, SEEK_SET);
-    fread(ret, 1, len, fl);
+    int val = fread(ret, 1, len, fl);
+    if (val < len) {
+      exit(1);
+    }
     fclose(fl);
     *len_store = len;
     return ret;
