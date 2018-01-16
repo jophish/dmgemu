@@ -3,10 +3,10 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include "cpu.h"
 #include "mmu.h"
-#include "rom.h"
 #include "emu.h"
+#include "cpu.h"
+#include "rom.h"
 #include "util.h"
 
 // Given a cpu and a rom, will execute the instruction in the rom

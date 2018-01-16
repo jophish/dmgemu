@@ -1,5 +1,8 @@
 #include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
 #include "mmu.h"
+#include "emu.h"
 
 int get_mem_region(mem_addr addr) {
   if (addr < RES_INT_VEC_END) {
@@ -56,8 +59,8 @@ uint8_t read_8(emu *gb_emu_p, mem_addr addr) {
       break;
     case (REGION_CART_RAM) :
       break;
+    // On the DMG, the internal RAM doesn't have a switchable bank
     case (REGION_INTERNAL_RAM_0):
-      break;
     case (REGION_INTERNAL_RAM_SWITCH) :
       break;
     case (REGION_ECHO_RAM) :
@@ -73,7 +76,7 @@ uint8_t read_8(emu *gb_emu_p, mem_addr addr) {
     case (REGION_INT_ENABLE_FLAG) :
       break;
     case (ERR_INVALID_ADDRESS) :
-      printf("Error when trying to write to address.\n");
+      printf("Error when trying to read from address.\n");
   }
   return ERR_INVALID_ADDRESS;
 }
@@ -82,12 +85,56 @@ uint16_t read_16(emu *gb_emu_p, mem_addr addr) {
   return (((uint16_t)(gb_emu_p->gb_rom.data[addr+1])) << 8) | gb_emu_p->gb_rom.data[addr];
 }
 
-void write_8(emu *gb_emu_p, mem_addr addr, uint8_t val) {
-  // Dummy interface for now.
-  return;
+void  write_8(emu *gb_emu_p, mem_addr addr, uint8_t val) {
+  switch (get_mem_region(addr)) {
+    // These cases can safely fall through
+    case (REGION_RES_INT_VEC) :
+    case (REGION_CART_HEADER) :
+    case (REGION_CART_ROM_BANK_0) :
+      // Illegal write here  Can't write to ROM
+    case (REGION_CART_ROM_BANK_SWITCH) :
+      break;
+    case (REGION_CHAR_RAM) :
+      break;
+    case (REGION_BG_MAP_DATA_1) :
+      break;
+    case (REGION_BG_MAP_DATA_2) :
+      break;
+    case (REGION_CART_RAM) :
+      break;
+    // On the DMG, the internal RAM doesn't have a switchable bank
+    case (REGION_INTERNAL_RAM_0):
+    case (REGION_INTERNAL_RAM_SWITCH) :
+      // This semicolon actually needs to be here because C is insane
+      ;
+      uint16_t buf_offset = addr - INTERNAL_RAM_0_START;
+      printf("Writing value %02x to internal RAM at location %04x\n", val, buf_offset);
+      gb_emu_p->gb_mmu.ram[buf_offset] = val;
+      break;
+    case (REGION_ECHO_RAM) :
+      break;
+    case (REGION_OAM) :
+      break;
+    case (REGION_RESERVED) :
+      break;
+    case (REGION_HW_IO_REGS) :
+      break;
+    case (REGION_ZERO_PAGE) :
+      break;
+    case (REGION_INT_ENABLE_FLAG) :
+      break;
+    case (ERR_INVALID_ADDRESS) :
+      printf("Error when trying to read from address.\n");
+  }
+
 }
 
 void write_16(emu *gb_emu_p, mem_addr addr, uint16_t val) {
   // Dummy interface for now.
   return;
+}
+
+void init_mmu(mmu *mmu_p) {
+  uint8_t *ram_buf = malloc(SZ_INTERNAL_RAM);
+  mmu_p->ram = ram_buf;
 }

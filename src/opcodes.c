@@ -141,7 +141,7 @@ uint16_t dispatch_op(emu *gb_emu_p) {
    // Control opcodes
     case (DI) :
       z80_p->clk.cpu_cycles += 4;
-      reset_flag_IE(z80_p);
+      reset_flag_IME(z80_p);
       set_PC(z80_p, pc+1);
       break;
    default :

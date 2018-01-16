@@ -1,9 +1,12 @@
 #ifndef MMU_H
 #define MMU_H
 
+
 #include <stdint.h>
-#include "emu.h"
 #include "error.h"
+
+// We forward declare the emulator typedef here to avoid a circular include
+typedef struct emu emu;
 
 typedef uint16_t mem_addr;
 
@@ -34,7 +37,11 @@ int get_mem_region(mem_addr addr);
 // cartridge features, as well as cartridge RAM.
 typedef struct mmu {
   uint8_t IE_flag; // 0xFFFF - interrupt enable
+  uint8_t *ram;
 } mmu;
+
+// Initializes buffers in the MMU
+void init_mmu(mmu *mmu_p);
 
 // Enum for distinct regions of memory with different behaviors
 enum mem_region {
@@ -89,4 +96,8 @@ enum mem_region {
 #define ZERO_PAGE_START 0xFF80
 #define ZERO_PAGE_END 0xFFFF
 #define INT_ENABLE_FLAG 0xFFFF
+
+// Size of internal RAM buffer (8kb)
+#define SZ_INTERNAL_RAM 0x1FFF
+
 #endif /* MMU_H */

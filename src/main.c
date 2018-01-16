@@ -2,10 +2,10 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "cpu.h"
-#include "mmu.h"
 #include "rom.h"
-#include "emu.h"
 #include "opcodes.h"
+#include "emu.h"
+
 
 int main(int argc, char **argv) {
   if (argc == 1) {
@@ -16,10 +16,9 @@ int main(int argc, char **argv) {
   emu *gb_emu_p = &gb_emu;
 
   cpu *z80_p = &(gb_emu.z80);
-
   rom *gb_rom_p = &(gb_emu.gb_rom);
 
-  init_cpu(z80_p);
+  init_emu(gb_emu_p);
   load_rom(gb_rom_p, argv[1]);
   set_PC(z80_p, 0x100);
 
