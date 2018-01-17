@@ -15,7 +15,7 @@ DEPEXT      := h
 OBJEXT      := o
 
 #Flags, Libraries and Includes
-CFLAGS      := -fopenmp -Wall -Werror -O3 -g
+CFLAGS      := -fopenmp -Wall -Werror -O3
 LIB         :=
 INC         := -I$(INCDIR) -I/usr/local/include
 INCDEP      := -I$(INCDIR)
@@ -28,6 +28,10 @@ OBJECTS     := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.$(OBJE
 
 #Defauilt Make
 all: resources $(TARGET)
+
+# Debug builds
+debug: CFLAGS += -DDEBUG -g
+debug: resources $(TARGET)
 
 #Remake
 remake: cleaner all
@@ -67,4 +71,4 @@ $(BUILDDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
 	\rm -f $(BUILDDIR)/$*.$(DEPEXT).tmp
 
 #Non-File Targets
-.PHONY: all remake clean cleaner resources
+.PHONY: all remake clean cleaner resources debug

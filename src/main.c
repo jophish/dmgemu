@@ -5,6 +5,7 @@
 #include "rom.h"
 #include "opcodes.h"
 #include "emu.h"
+#include "debug.h"
 
 
 int main(int argc, char **argv) {
@@ -23,11 +24,14 @@ int main(int argc, char **argv) {
   set_PC(z80_p, 0x100);
 
   while (true) {
-    printf("Now executing instruction at address 0x%04x\n", get_PC(z80_p));
+    //printf("Now executing instruction at address 0x%04x\n", get_PC(z80_p));
+    #ifdef DEBUG
+    debug_prompt(gb_emu_p);
+    #endif
     int op = dispatch_op(gb_emu_p);
     if (op == ERR_OP_INVALID_OR_NOT_IMPLEMENTED) {
       exit(0);
     }
-    printf("Successfully dispatched op: %02x\n", op);
+    //printf("Successfully dispatched op: %02x\n", op);
   }
 }

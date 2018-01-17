@@ -1,3 +1,5 @@
+#include <stdio.h>
+#include <stdlib.h>
 #include "util.h"
 
 int byte_to_2c(uint8_t val) {
@@ -7,4 +9,8 @@ int byte_to_2c(uint8_t val) {
     return -1*(int)val;
   }
   return (int)val;
+}
+
+void get_user_input(char *buf) {
+  //char line[MAX_USER_INPUT_LENGTH];
 }
