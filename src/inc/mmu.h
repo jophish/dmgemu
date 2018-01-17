@@ -36,8 +36,10 @@ int get_mem_region(mem_addr addr);
 // ROM. Eventually, this will be used to implement bank switching and MBC-x
 // cartridge features, as well as cartridge RAM.
 typedef struct mmu {
-  uint8_t IE_flag; // 0xFFFF - interrupt enable
+  uint8_t ie_flag; // 0xFFFF - interrupt enable
   uint8_t *ram;
+  uint8_t *hw_io_regs;
+  uint8_t *zero_page;
 } mmu;
 
 // Initializes buffers in the MMU
@@ -98,6 +100,10 @@ enum mem_region {
 #define INT_ENABLE_FLAG 0xFFFF
 
 // Size of internal RAM buffer (8kb)
-#define SZ_INTERNAL_RAM 0x1FFF
+#define SZ_INTERNAL_RAM 0x2000
+#define SZ_HW_IO_REGS 0x80
+#define SZ_ZERO_PAGE 0x7F
 
+// Masks
+#define MASK_IE_FLAG 0xF
 #endif /* MMU_H */

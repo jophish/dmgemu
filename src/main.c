@@ -23,8 +23,11 @@ int main(int argc, char **argv) {
   set_PC(z80_p, 0x100);
 
   while (true) {
-    //printf("Now executing instruction at address 0x%04x\n", get_PC(z80_p));
-    dispatch_op(gb_emu_p);
-    //printf("Successfully dispatched op: %02x\n", op);
+    printf("Now executing instruction at address 0x%04x\n", get_PC(z80_p));
+    int op = dispatch_op(gb_emu_p);
+    if (op == ERR_OP_INVALID_OR_NOT_IMPLEMENTED) {
+      exit(0);
+    }
+    printf("Successfully dispatched op: %02x\n", op);
   }
 }
