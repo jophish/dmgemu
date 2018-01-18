@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "util.h"
+#include "error.h"
 
 int byte_to_2c(uint8_t val) {
   if ((0x80 & val) != 0) {
@@ -11,6 +12,9 @@ int byte_to_2c(uint8_t val) {
   return (int)val;
 }
 
-void get_user_input(char *buf) {
-  //char line[MAX_USER_INPUT_LENGTH];
+int get_user_input(char *buf, int size) {
+ if (!fgets(buf, size, stdin)) {
+   return ERR_READ_LINE;
+ }
+ return 0;
 }

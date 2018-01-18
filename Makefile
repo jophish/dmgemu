@@ -15,7 +15,7 @@ DEPEXT      := h
 OBJEXT      := o
 
 #Flags, Libraries and Includes
-CFLAGS      := -fopenmp -Wall -Werror -O3
+CFLAGS      := -fopenmp -Wall -Werror -O3 -D_OPENBSD_SOURCE
 LIB         :=
 INC         := -I$(INCDIR) -I/usr/local/include
 INCDEP      := -I$(INCDIR)

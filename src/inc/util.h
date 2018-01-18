@@ -3,9 +3,11 @@
 
 #include <stdint.h>
 
+
 int byte_to_2c(uint8_t val);
 
-void get_user_input(char *buf);
+// Fills buf with a line of user input. Returns 0 on success,
+// or ERR_READ_LINE on failure
+int get_user_input(char *buf, int size);
 
-#define MAX_USER_INPUT_LENGTH 100
 #endif /* UTIL_H */

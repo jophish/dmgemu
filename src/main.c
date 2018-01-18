@@ -6,6 +6,7 @@
 #include "opcodes.h"
 #include "emu.h"
 #include "debug.h"
+#include "error.h"
 
 
 int main(int argc, char **argv) {
@@ -26,7 +27,9 @@ int main(int argc, char **argv) {
   while (true) {
     //printf("Now executing instruction at address 0x%04x\n", get_PC(z80_p));
     #ifdef DEBUG
-    debug_prompt(gb_emu_p);
+    if(debug_prompt(gb_emu_p) == ERR_READ_LINE) {
+      exit(0);
+	}
     #endif
     int op = dispatch_op(gb_emu_p);
     if (op == ERR_OP_INVALID_OR_NOT_IMPLEMENTED) {
