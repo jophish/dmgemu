@@ -6,6 +6,8 @@
 #include "util.h"
 #include "error.h"
 #include "emu.h"
+#include "mmu.h"
+#include "opcodes.h"
 
 int debug_prompt(emu *gb_emu_p) {
   // If the prompt would be shown, first show the previous instruction
@@ -27,6 +29,8 @@ int debug_prompt(emu *gb_emu_p) {
       return 0;
     }
   }
+
+  show_previous_inst(gb_emu_p);
   while(1) {
 
     show_prompt(z80_p);
@@ -34,6 +38,7 @@ int debug_prompt(emu *gb_emu_p) {
     if(get_user_input(line, sizeof(line)) == ERR_READ_LINE) {
       return ERR_READ_LINE;
     }
+    bool success = false;
     char * dbg_str = strtok(line, TOK_DELIM);
     char *endptr;
     uint16_t addr;
@@ -46,7 +51,7 @@ int debug_prompt(emu *gb_emu_p) {
 	  printf("%ssi takes no arguments\n", ERR_SPACE);
 	  break;
 	}
-	return 0;
+	success = true;
 	break;
 
       case (TOK_STEP_N_INSTS) :
@@ -66,7 +71,8 @@ int debug_prompt(emu *gb_emu_p) {
 	}
 
 	dbg_p->n = (uint16_t)num_steps;
-	return 0;
+	success = true;
+	break;
 
       case (TOK_SET_BP) :
 	if ((dbg_str = get_next_tok()) == NULL) {
@@ -131,7 +137,8 @@ int debug_prompt(emu *gb_emu_p) {
 	  break;
 	}
 	dbg_p->run = true;
-	return 0;
+	success = true;
+	break;
       case (TOK_HELP) :
 	if ((dbg_str = get_next_tok()) != NULL) {
 	  printf("%shelp takes no arguments\n", ERR_SPACE);
@@ -141,7 +148,7 @@ int debug_prompt(emu *gb_emu_p) {
 	printf("%sstep n instructions: sn n\n", ERR_SPACE);
 	printf("%sset a breakpoint at hex address n: bp n (e.g., bp 0x0150)\n", ERR_SPACE);
 	printf("%sremove a breakpoint at hex address n: rbp n (e.g., rbp 0x0150)\n", ERR_SPACE);
-	printf("%sshow all breakpoints: sbp", ERR_SPACE);
+	printf("%sshow all breakpoints: sbp\n", ERR_SPACE);
 	printf("%scontinue execution until next breakpoint: c\n", ERR_SPACE);
 	printf("%sshow this help menu: help\n", ERR_SPACE);
 	break;
@@ -156,6 +163,12 @@ int debug_prompt(emu *gb_emu_p) {
       default :
 	printf("%sPlease enter a valid command (type 'help' for a list)\n", ERR_SPACE);
 	break;
+    }
+    // We're about to step out of the debugger and execute, so set the previous instruction to the
+    // current PC
+    if (success) {
+      dbg_p->prev_inst_addr = get_PC(z80_p);
+      return 0;
     }
   }
 }
@@ -200,6 +213,7 @@ char *get_next_tok(void) {
 void init_dbg(debugger *dbg_p) {
   dbg_p->n = 0;
   dbg_p->run = false;
+  dbg_p->prev_inst_addr = 0;
   dbg_p->breakpoints = malloc(MAX_BREAKPOINTS*sizeof(uint16_t));
   memset(dbg_p->breakpoints, 0, MAX_BREAKPOINTS*sizeof(uint16_t));
 }
@@ -263,4 +277,30 @@ bool check_breakpoint(debugger *dbg_p, uint16_t addr) {
     }
   }
   return false;
+}
+
+void show_previous_inst(emu *gb_emu_p) {
+  debugger *dbg_p = &(gb_emu_p->gb_debugger);
+  uint16_t addr = dbg_p->prev_inst_addr;
+  if (addr == 0) {
+    return;
+  }
+  char buf[MAX_BUF_LEN];
+  int err = 0;
+  if ((err = addr_to_op_str(gb_emu_p, addr, buf, MAX_BUF_LEN)) == ERR_OP_INVALID_OR_NOT_IMPLEMENTED) {
+    printf("%sNo string data available for this op\n", ERR_SPACE);
+    return;
+  }
+  if (err == ERR_BUF_LEN) {
+    printf("Debugger needs more buffer space to print this op\n");
+    exit(0);
+  }
+  uint16_t op = read_8(gb_emu_p, addr);
+  uint16_t inst_len = op_length(op);
+  printf("%s[0x%04x] %s (%02x", ERR_SPACE, addr, buf, op);
+  for (int i = 1; i < inst_len; i++) {
+    printf(" %02x", read_8(gb_emu_p, addr+i));
+  }
+  printf(")\n");
+  return;
 }

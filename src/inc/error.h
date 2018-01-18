@@ -11,6 +11,7 @@ enum error {
   ERR_MAX_BREAKPOINTS = -6,
   ERR_DUPLICATE_BP = -7,
   ERR_INVALID_BP = -8,
+  ERR_BUF_LEN = -9,
 };
 
 #endif /* ERR_H */

@@ -20,12 +20,20 @@ int dispatch_op(emu *gb_emu_p);
 // prefix.
 int op_length(uint16_t op);
 
-// Given an opcode, returns the number of cycles it takes to
-// execute.
-int op_cycles(uint16_t op);
+// Given a memory address, interprets it as an instruction and
+// fills the buf with the string mnemonic of the opcode including
+// any immediate data that might follow the code. Returns ERR_OP_INVALID_OR_NOT_IMPLEMENTED
+// if the memory at addr does not correspond to a known instruction. Returns ERR_BUF_LEN
+// if the given buffer is too small for the given string
+int addr_to_op_str(emu *gb_emu_p, uint16_t addr, char *buf, int buf_len);
+
+// One byte mask
+#define BYTE_MASK 0xF
+
+// Extended prefix
+#define PREFIX_CB 0xCB
 
 
-  
 // Opcode definitions
 
 // 8-Bit Immediate Loads
@@ -61,7 +69,6 @@ int op_cycles(uint16_t op);
 
 // NOP
 #define OP_NOP        0x00
-#define OP_LEN_NOP    4
 
 // Jump to 16-bit Immediate address
 #define OP_B16_JP_IV 0xC3
@@ -89,4 +96,5 @@ int op_cycles(uint16_t op);
 
 // Control
 #define OP_DI 0xF3
+
 #endif /* OPCODES_H */

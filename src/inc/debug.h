@@ -11,6 +11,7 @@ typedef struct debugger {
   uint16_t *breakpoints; // List of breakpoints
   uint16_t n; // Number of instructions to step before dropping back into dbg
   bool run;   // Flag indicating whether or not we're running till we hit a breakpoint
+  uint16_t prev_inst_addr; // Address of last instruction executed before entering debugger
 } debugger;
 
 // Displays the debug prompt and waits for input if appropriate, otherwise
@@ -49,6 +50,9 @@ bool hit_breakpoint(cpu *z80_p, debugger *dbg_p);
 // Checks if addr matches any set breakpoints
 bool check_breakpoint(debugger *dbg_p, uint16_t addr);
 
+// Displays the previous instruction executed, both in binary and in assembly
+void show_previous_inst(emu *gb_emu_p);
+
 enum dbg_tok {
   TOK_STEP_INST,
   TOK_STEP_N_INSTS,
@@ -68,6 +72,7 @@ enum dbg_tok {
 
 #define MAX_USER_INPUT_LENGTH 256
 #define MAX_BREAKPOINTS 32
+#define MAX_BUF_LEN 100
 
 // Debugger strings
 #define DBG_STR_STEP_INST "si"
