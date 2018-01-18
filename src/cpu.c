@@ -26,6 +26,7 @@ void print_regs(cpu *z80, bool width) {
   }
   printf("SP: 0x%04x\n", get_SP(z80));
   printf("PC: 0x%04x\n", get_PC(z80));
+  printf("IME: %s\n", z80->regs.ime ? "true" : "false");
 }
 
 void print_flags(cpu *z80) {

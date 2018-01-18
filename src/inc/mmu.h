@@ -10,8 +10,9 @@ typedef struct emu emu;
 
 typedef uint16_t mem_addr;
 
-// Reads 8 bits from the byte designated by addr
-uint8_t read_8(emu *gb_emu_p, mem_addr addr);
+// Reads 8 bits from the byte designated by addr. Returns ERR_INVALID_ADDRESS
+// if the given address is not readable
+int read_8(emu *gb_emu_p, mem_addr addr);
 
 // Reads 16 bits starting at the byte designated by addr. Note that
 // the z80 is little-endian. The returned value will contain the value at

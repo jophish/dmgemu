@@ -60,10 +60,12 @@ enum dbg_tok {
   TOK_RM_BP,
   TOK_SHOW_BP,
   TOK_CONTINUE,
+  TOK_HELP,
   TOK_READ_MEM_ADDR,
   TOK_READ_MEM_RANGE,
-  TOK_HELP,
   TOK_SHOW_REGS,
+  TOK_READ_MEM_ADDR_INST,
+  TOK_READ_MEM_ADDR_INST_RANGE,
 };
 
 // Token delimiter
@@ -83,6 +85,9 @@ enum dbg_tok {
 #define DBG_STR_CONTINUE "c"
 #define DBG_STR_READ_MEM_ADDR "m"
 #define DBG_STR_READ_MEM_RANGE "mr"
+#define DBG_STR_READ_MEM_ADDR_INST "mi"
+#define DBG_STR_READ_MEM_INST_RANGE "mri"
+#define DBG_STR_SHOW_REGS "r"
 #define DBG_STR_HELP "help"
-#define DBG_STR_SHOW_REGS
+
 #endif /* DEBUG_H */

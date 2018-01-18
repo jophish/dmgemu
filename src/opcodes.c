@@ -198,11 +198,26 @@ int addr_to_op_str(emu *gb_emu_p, uint16_t addr, char *buf, int buf_len) {
     case (OP_B16_LD_IV_HL) :
       err = sprintf(buf, "ld hl, 0x%04x", read_16(gb_emu_p, addr+1));
       break;
+    case (OP_B8_LD_IV_A) :
+      err = sprintf(buf, "ld a, 0x%02x", read_8(gb_emu_p, addr+1));
+      break;
     case (OP_B8_LD_IV_B) :
       err = sprintf(buf, "ld b, 0x%02x", read_8(gb_emu_p, addr+1));
       break;
     case (OP_B8_LD_IV_C) :
       err = sprintf(buf, "ld c, 0x%02x", read_8(gb_emu_p, addr+1));
+      break;
+    case (OP_B8_LD_IV_D) :
+      err = sprintf(buf, "ld d, 0x%02x", read_8(gb_emu_p, addr+1));
+      break;
+    case (OP_B8_LD_IV_E) :
+      err = sprintf(buf, "ld e, 0x%02x", read_8(gb_emu_p, addr+1));
+      break;
+    case (OP_B8_LD_IV_H) :
+      err = sprintf(buf, "ld h, 0x%02x", read_8(gb_emu_p, addr+1));
+      break;
+    case (OP_B8_LD_IV_L) :
+      err = sprintf(buf, "ld l, 0x%02x", read_8(gb_emu_p, addr+1));
       break;
     case (OP_LDD_HL_A) :
       err = sprintf(buf, "ldd (hl), a");
@@ -235,6 +250,12 @@ int addr_to_op_str(emu *gb_emu_p, uint16_t addr, char *buf, int buf_len) {
       ;
       int rel_offset = byte_to_2c(read_8(gb_emu_p, addr+1)) + 2;
       err = sprintf(buf, "jr nz, 0x%04x", addr + rel_offset);
+      break;
+    case (OP_DI) :
+      err = sprintf(buf, "di");
+      break;
+    case (OP_LDH_N_A) :
+      err = sprintf(buf, "ldh (0x%04x), a", HW_IO_REGS_START + read_8(gb_emu_p, addr+1));
       break;
     default :
       return ERR_OP_INVALID_OR_NOT_IMPLEMENTED;

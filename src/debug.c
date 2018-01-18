@@ -36,19 +36,25 @@ int debug_prompt(emu *gb_emu_p) {
 
 
   while(!success) {
+    int err;
+    char * dbg_str;
     if (!shown_inst) {
       show_previous_inst(gb_emu_p);
       shown_inst = true;
     }
     show_prompt(z80_p);
     char line[MAX_USER_INPUT_LENGTH];
-    if(get_user_input(line, sizeof(line)) == ERR_READ_LINE) {
-      return ERR_READ_LINE;
+    err = get_user_input(line, sizeof(line));
+    if(err == ERR_READ_LINE) {
+      dbg_str = "";
+    } else {
+      dbg_str = strtok(line, TOK_DELIM);
     }
-    char * dbg_str = strtok(line, TOK_DELIM);
+
     char *endptr;
     uint16_t addr;
-    int err;
+    int mem_val;
+
     switch (get_debug_tok(dbg_str)) {
 
       case (TOK_STEP_INST) :
@@ -151,11 +157,14 @@ int debug_prompt(emu *gb_emu_p) {
 	  break;
 	}
 	printf("%sstep a single instruction: si\n", ERR_SPACE);
-	printf("%sstep n instructions: sn n\n", ERR_SPACE);
+	printf("%sstep n instructions: sn n (e.g., sn 10)\n", ERR_SPACE);
 	printf("%sset a breakpoint at hex address n: bp n (e.g., bp 0x0150)\n", ERR_SPACE);
 	printf("%sremove a breakpoint at hex address n: rbp n (e.g., rbp 0x0150)\n", ERR_SPACE);
 	printf("%sshow all breakpoints: sbp\n", ERR_SPACE);
 	printf("%scontinue execution until next breakpoint: c\n", ERR_SPACE);
+	printf("%sread memory address at n: m n (e.g., m 0xFF00)\n", ERR_SPACE);
+	printf("%sread memory range [n, m): mr n m (e.g., mr 0xFF00 0xFFFF)\n", ERR_SPACE);
+	printf("%sshow internal cpu registers: r\n", ERR_SPACE);
 	printf("%sshow this help menu: help\n", ERR_SPACE);
 	break;
 
@@ -166,6 +175,91 @@ int debug_prompt(emu *gb_emu_p) {
 	}
 	show_breakpoints(dbg_p);
 	break;
+
+      case (TOK_READ_MEM_ADDR) :
+	if ((dbg_str = get_next_tok()) == NULL) {
+	  printf("%sm takes a single hexadecimal argument\n", ERR_SPACE);
+	  break;
+	}
+
+	addr = (uint16_t)strtoimax(dbg_str, &endptr, 0);
+
+	if (addr <= 0) {
+	  printf("%sPlease enter a hexadecimal address (e.g., 0xFF12)\n", ERR_SPACE);
+	  break;
+	}
+
+	if ((dbg_str = get_next_tok()) != NULL) {
+	  printf("%sm takes a single argument\n", ERR_SPACE);
+	  break;
+	}
+
+	if ((mem_val = read_8(gb_emu_p, addr)) == ERR_INVALID_ADDRESS) {
+	  printf("%sPlease enter a valid (readable) memory address\n", ERR_SPACE);
+	  break;
+	}
+
+	printf("%s[0x%04x] %02x\n", ERR_SPACE, addr, mem_val);
+	break;
+
+      case (TOK_READ_MEM_RANGE) :
+	if ((dbg_str = get_next_tok()) == NULL) {
+	  printf("%smr takes two hexadecimal arguments\n", ERR_SPACE);
+	  break;
+	}
+	addr = (uint16_t)strtoimax(dbg_str, &endptr, 0);
+
+	if ((dbg_str = get_next_tok()) == NULL) {
+	  printf("%smr takes two hexadecimal arguments\n", ERR_SPACE);
+	  break;
+	}
+
+	uint32_t addr2_hi = (uint32_t)strtoimax(dbg_str, &endptr, 0);
+
+	if (addr <= 0 || addr2_hi <= 0) {
+	  printf("%sPlease enter a hexadecimal address (e.g., 0xFF12)\n", ERR_SPACE);
+	  break;
+	}
+
+	if (addr > addr2_hi) {
+	  printf("%sPlease enter memory addresses from lowest to highest\n", ERR_SPACE);
+	  break;
+	}
+
+	if (addr > INT_ENABLE_FLAG) {
+	  printf("%sPlease enter a first address less than or equal to 0x%04x\n", ERR_SPACE, INT_ENABLE_FLAG);
+	  break;
+	}
+
+	if (addr2_hi > INT_ENABLE_FLAG+1) {
+	  printf("%sPlease enter a first address less than or equal to 0x%05x\n", ERR_SPACE, INT_ENABLE_FLAG+1);
+	  break;
+	}
+
+	for (int i = 0; i < addr2_hi - addr; i++) {
+	  mem_val = read_8(gb_emu_p, addr+i);
+	  if (mem_val == ERR_INVALID_ADDRESS) {
+	    printf("%s[0x%04x] ??\n", ERR_SPACE, addr);
+	  } else {
+	    printf("%s[0x%04x] %02x\n", ERR_SPACE, addr+i, mem_val);
+	  }
+	}
+	break;
+
+      case (TOK_SHOW_REGS) :
+	if ((dbg_str = get_next_tok()) != NULL) {
+	  printf("%sr takes no arguments\n", ERR_SPACE);
+	  break;
+	}
+	printf("%sA: 0x%02x, F: 0x%02x\n", ERR_SPACE, z80_p->regs.a, z80_p->regs.f);
+	printf("%sB: 0x%02x, C: 0x%02x\n", ERR_SPACE, z80_p->regs.b, z80_p->regs.c);
+	printf("%sD: 0x%02x, E: 0x%02x\n", ERR_SPACE, z80_p->regs.d, z80_p->regs.e);
+	printf("%sH: 0x%02x, L: 0x%02x\n", ERR_SPACE, z80_p->regs.h, z80_p->regs.l);
+	printf("%sSP: 0x%04x\n", ERR_SPACE, get_SP(z80_p));
+	printf("%sPC: 0x%04x\n", ERR_SPACE, get_PC(z80_p));
+	printf("%sIME: %s\n", ERR_SPACE, z80_p->regs.ime ? "true" : "false");
+	break;
+
       default :
 	printf("%sPlease enter a valid command (type 'help' for a list)\n", ERR_SPACE);
 	break;
@@ -200,6 +294,15 @@ int get_debug_tok(char *buf) {
   }
   if (strcmp(buf, DBG_STR_CONTINUE) == 0) {
     return TOK_CONTINUE;
+  }
+  if (strcmp(buf, DBG_STR_READ_MEM_ADDR) == 0) {
+    return TOK_READ_MEM_ADDR;
+  }
+  if (strcmp(buf, DBG_STR_READ_MEM_RANGE) == 0) {
+    return TOK_READ_MEM_RANGE;
+  }
+  if (strcmp(buf, DBG_STR_SHOW_REGS) == 0) {
+    return TOK_SHOW_REGS;
   }
   return ERR_INVALID_TOKEN;
 }
