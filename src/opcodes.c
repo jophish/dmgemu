@@ -192,6 +192,50 @@ int addr_to_op_str(emu *gb_emu_p, uint16_t addr, char *buf, int buf_len) {
     case (OP_B16_JP_IV) :
       err = sprintf(buf, "jp 0x%04x", read_16(gb_emu_p, addr+1));
       break;
+    case (OP_XOR_A) :
+      err = sprintf(buf, "xor a");
+      break;
+    case (OP_B16_LD_IV_HL) :
+      err = sprintf(buf, "ld hl, 0x%04x", read_16(gb_emu_p, addr+1));
+      break;
+    case (OP_B8_LD_IV_B) :
+      err = sprintf(buf, "ld b, 0x%02x", read_8(gb_emu_p, addr+1));
+      break;
+    case (OP_B8_LD_IV_C) :
+      err = sprintf(buf, "ld c, 0x%02x", read_8(gb_emu_p, addr+1));
+      break;
+    case (OP_LDD_HL_A) :
+      err = sprintf(buf, "ldd (hl), a");
+      break;
+    case (OP_DEC_A) :
+      err = sprintf(buf, "dec a");
+      break;
+    case (OP_DEC_B) :
+      err = sprintf(buf, "dec b");
+      break;
+    case (OP_DEC_C) :
+      err = sprintf(buf, "dec c");
+      break;
+    case (OP_DEC_D) :
+      err = sprintf(buf, "dec d");
+      break;
+    case (OP_DEC_E) :
+      err = sprintf(buf, "dec e");
+      break;
+    case (OP_DEC_H) :
+      err = sprintf(buf, "dec h");
+      break;
+    case (OP_DEC_L) :
+      err = sprintf(buf, "dec l");
+      break;
+    case (OP_DEC_IND_HL) :
+      err = sprintf(buf, "dec (hl)");
+      break;
+    case (OP_B8_JR_NZ) :
+      ;
+      int rel_offset = byte_to_2c(read_8(gb_emu_p, addr+1)) + 2;
+      err = sprintf(buf, "jr nz, 0x%04x", addr + rel_offset);
+      break;
     default :
       return ERR_OP_INVALID_OR_NOT_IMPLEMENTED;
   }

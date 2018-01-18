@@ -10,6 +10,10 @@
 #include "opcodes.h"
 
 int debug_prompt(emu *gb_emu_p) {
+
+  // Keeps track of whether or not we're done showing the prompt
+  bool success = false;
+  bool shown_inst = false;
   // If the prompt would be shown, first show the previous instruction
   // that was executed
   cpu *z80_p = &(gb_emu_p->z80);
@@ -17,7 +21,7 @@ int debug_prompt(emu *gb_emu_p) {
   // Don't show the prompt at all if we should be stepping
   if (dbg_p->n > 0) {
     dbg_p->n -= 1;
-    return 0;
+    success = true;
   }
 
   // If we've told the debugger to execute until we reach a breakpoint, don't show
@@ -26,19 +30,21 @@ int debug_prompt(emu *gb_emu_p) {
     if (hit_breakpoint(z80_p, dbg_p)) {
       dbg_p->run = false;
     } else {
-      return 0;
+      success = true;
     }
   }
 
-  show_previous_inst(gb_emu_p);
-  while(1) {
 
+  while(!success) {
+    if (!shown_inst) {
+      show_previous_inst(gb_emu_p);
+      shown_inst = true;
+    }
     show_prompt(z80_p);
     char line[MAX_USER_INPUT_LENGTH];
     if(get_user_input(line, sizeof(line)) == ERR_READ_LINE) {
       return ERR_READ_LINE;
     }
-    bool success = false;
     char * dbg_str = strtok(line, TOK_DELIM);
     char *endptr;
     uint16_t addr;
@@ -164,14 +170,13 @@ int debug_prompt(emu *gb_emu_p) {
 	printf("%sPlease enter a valid command (type 'help' for a list)\n", ERR_SPACE);
 	break;
     }
-    // We're about to step out of the debugger and execute, so set the previous instruction to the
-    // current PC
-    if (success) {
-      dbg_p->prev_inst_addr = get_PC(z80_p);
-      return 0;
-    }
   }
+  // We're about to step out of the debugger and execute, so set the previous instruction to the
+  // current PC
+  dbg_p->prev_inst_addr = get_PC(z80_p);
+  return 0;
 }
+
 
 
 int get_debug_tok(char *buf) {
@@ -297,7 +302,7 @@ void show_previous_inst(emu *gb_emu_p) {
   }
   uint16_t op = read_8(gb_emu_p, addr);
   uint16_t inst_len = op_length(op);
-  printf("%s[0x%04x] %s (%02x", ERR_SPACE, addr, buf, op);
+  printf("%s[0x%04x] %s%s(%02x", ERR_SPACE, addr, buf, ERR_SPACE, op);
   for (int i = 1; i < inst_len; i++) {
     printf(" %02x", read_8(gb_emu_p, addr+i));
   }
