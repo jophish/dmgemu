@@ -10,6 +10,7 @@ enum error {
   ERR_INVALID_TOKEN = -5,
   ERR_MAX_BREAKPOINTS = -6,
   ERR_DUPLICATE_BP = -7,
+  ERR_INVALID_BP = -8,
 };
 
 #endif /* ERR_H */

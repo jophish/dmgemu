@@ -8,6 +8,7 @@ int dispatch_op(emu *gb_emu_p) {
   uint8_t val_8, result_8;
   int rel_offset;
   uint16_t val_16;
+
   switch(opcode) {
 
     /*************************/
@@ -178,4 +179,12 @@ int dispatch_op(emu *gb_emu_p) {
 
   }
   return opcode;
+}
+
+
+int op_length(uint16_t op) {
+  switch (op) {
+    default :
+      return 1;
+  }
 }

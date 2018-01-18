@@ -17,6 +17,16 @@ int debug_prompt(emu *gb_emu_p) {
     dbg_p->n -= 1;
     return 0;
   }
+
+  // If we've told the debugger to execute until we reach a breakpoint, don't show
+  // the prompt unless we've actually reached a breakpoint
+  if (dbg_p->run) {
+    if (hit_breakpoint(z80_p, dbg_p)) {
+      dbg_p->run = false;
+    } else {
+      return 0;
+    }
+  }
   while(1) {
 
     show_prompt(z80_p);
@@ -67,7 +77,7 @@ int debug_prompt(emu *gb_emu_p) {
 	addr = (uint16_t)strtoimax(dbg_str, &endptr, 0);
 
 	if (addr <= 0) {
-	  printf("%sPlease enter hexadecimal number of steps (e.g., 0xFF12)\n", ERR_SPACE);
+	  printf("%sPlease enter a hexadecimal address (e.g., 0xFF12)\n", ERR_SPACE);
 	  break;
 	}
 
@@ -89,6 +99,39 @@ int debug_prompt(emu *gb_emu_p) {
 	printf("Breakpoint set at address 0x%04x\n", addr);
 	break;
 
+      case (TOK_RM_BP) :
+	if ((dbg_str = get_next_tok()) == NULL) {
+	  printf("%srbp takes a single hexadecimal argument\n", ERR_SPACE);
+	  break;
+	}
+
+	addr = (uint16_t)strtoimax(dbg_str, &endptr, 0);
+
+	if (addr <= 0) {
+	  printf("%sPlease enter a hexadecimal address (e.g., 0xFF12)\n", ERR_SPACE);
+	  break;
+	}
+
+	if ((dbg_str = get_next_tok()) != NULL) {
+	  printf("%srbp takes a single argument\n", ERR_SPACE);
+	  break;
+	}
+
+	if ((err = remove_breakpoint(dbg_p, addr)) == ERR_INVALID_BP) {
+	  printf("%sNo breakpoint defined at address 0x%04x\n", ERR_SPACE, addr);
+	  break;
+	}
+
+	printf("%sSuccessfully removed breakpoint at address 0x%04x\n", ERR_SPACE, addr);
+	break;
+
+      case (TOK_CONTINUE) :
+	if ((dbg_str = get_next_tok()) != NULL) {
+	  printf("%sc takes no arguments\n", ERR_SPACE);
+	  break;
+	}
+	dbg_p->run = true;
+	return 0;
       case (TOK_HELP) :
 	if ((dbg_str = get_next_tok()) != NULL) {
 	  printf("%shelp takes no arguments\n", ERR_SPACE);
@@ -97,6 +140,9 @@ int debug_prompt(emu *gb_emu_p) {
 	printf("%sstep a single instruction: si\n", ERR_SPACE);
 	printf("%sstep n instructions: sn n\n", ERR_SPACE);
 	printf("%sset a breakpoint at hex address n: bp n (e.g., bp 0x0150)\n", ERR_SPACE);
+	printf("%sremove a breakpoint at hex address n: rbp n (e.g., rbp 0x0150)\n", ERR_SPACE);
+	printf("%sshow all breakpoints: sbp", ERR_SPACE);
+	printf("%scontinue execution until next breakpoint: c\n", ERR_SPACE);
 	printf("%sshow this help menu: help\n", ERR_SPACE);
 	break;
 
@@ -128,9 +174,14 @@ int get_debug_tok(char *buf) {
   if (strcmp(buf, DBG_STR_SET_BP) == 0) {
     return TOK_SET_BP;
   }
-
   if (strcmp(buf, DBG_STR_SHOW_BP) == 0) {
     return TOK_SHOW_BP;
+  }
+  if (strcmp(buf, DBG_STR_RM_BP) == 0) {
+    return TOK_RM_BP;
+  }
+  if (strcmp(buf, DBG_STR_CONTINUE) == 0) {
+    return TOK_CONTINUE;
   }
   return ERR_INVALID_TOKEN;
 }
@@ -148,6 +199,7 @@ char *get_next_tok(void) {
 
 void init_dbg(debugger *dbg_p) {
   dbg_p->n = 0;
+  dbg_p->run = false;
   dbg_p->breakpoints = malloc(MAX_BREAKPOINTS*sizeof(uint16_t));
   memset(dbg_p->breakpoints, 0, MAX_BREAKPOINTS*sizeof(uint16_t));
 }
@@ -187,4 +239,28 @@ void show_breakpoints(debugger *dbg_p) {
       }
     }
   }
+}
+
+
+int remove_breakpoint(debugger *dbg_p, uint16_t addr) {
+  for (int i = 0; i < MAX_BREAKPOINTS; i++) {
+    if (dbg_p->breakpoints[i] == addr) {
+      dbg_p->breakpoints[i] = 0;
+      return 0;
+    }
+  }
+  return ERR_INVALID_BP;
+}
+
+bool hit_breakpoint(cpu *z80_p, debugger *dbg_p) {
+  return check_breakpoint(dbg_p, get_PC(z80_p));
+}
+
+bool check_breakpoint(debugger *dbg_p, uint16_t addr) {
+  for (int i = 0; i < MAX_BREAKPOINTS; i++) {
+    if (dbg_p->breakpoints[i] == addr) {
+      return true;
+    }
+  }
+  return false;
 }

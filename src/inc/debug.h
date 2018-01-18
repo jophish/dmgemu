@@ -36,8 +36,18 @@ void init_dbg(debugger *dbg_p);
 // If the breakpoint is already in the list, returns ERR_DUPLICATE_BP
 int add_breakpoint(debugger *dbg_p, uint16_t addr);
 
+// Given a memory address removes the breakpoint associated with that address.
+// If the given address does not exist as a breakpoint, returns ERR_INVALID_BP.
+int remove_breakpoint(debugger *dbg_p, uint16_t addr);
+
 // Displays the current breakpoints in the debugger prompt
 void show_breakpoints(debugger *dbg_p);
+
+// Returns true if the current PC matches a set breakpoint, false otherwise
+bool hit_breakpoint(cpu *z80_p, debugger *dbg_p);
+
+// Checks if addr matches any set breakpoints
+bool check_breakpoint(debugger *dbg_p, uint16_t addr);
 
 enum dbg_tok {
   TOK_STEP_INST,

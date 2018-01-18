@@ -14,6 +14,18 @@
 // instruction executed.
 int dispatch_op(emu *gb_emu_p);
 
+// Given an opcode, returns the number of bytes it takes up,
+// including any immediate values. The op argument is 2 bytes
+// in order to account for 2-byte long opcodes, using the CB
+// prefix.
+int op_length(uint16_t op);
+
+// Given an opcode, returns the number of cycles it takes to
+// execute.
+int op_cycles(uint16_t op);
+
+
+  
 // Opcode definitions
 
 // 8-Bit Immediate Loads
@@ -49,6 +61,7 @@ int dispatch_op(emu *gb_emu_p);
 
 // NOP
 #define OP_NOP        0x00
+#define OP_LEN_NOP    4
 
 // Jump to 16-bit Immediate address
 #define OP_B16_JP_IV 0xC3
