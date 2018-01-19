@@ -54,7 +54,7 @@ int debug_prompt(emu *gb_emu_p) {
     char *endptr;
     uint16_t addr;
     int mem_val;
-
+    uint32_t addr2_hi;
     switch (get_debug_tok(dbg_str)) {
 
       case (TOK_STEP_INST) :
@@ -164,6 +164,8 @@ int debug_prompt(emu *gb_emu_p) {
 	printf("%scontinue execution until next breakpoint: c\n", ERR_SPACE);
 	printf("%sread memory address at n: m n (e.g., m 0xFF00)\n", ERR_SPACE);
 	printf("%sread memory range [n, m): mr n m (e.g., mr 0xFF00 0xFFFF)\n", ERR_SPACE);
+	printf("%sread instruction at address n: mi n (e.g., mi 0x0150)\n", ERR_SPACE);
+	printf("%sread instructions in memory range [n, m): mri n m (e.g., mri 0x150 0x160)\n", ERR_SPACE);
 	printf("%sshow internal cpu registers: r\n", ERR_SPACE);
 	printf("%sshow this help menu: help\n", ERR_SPACE);
 	break;
@@ -214,7 +216,7 @@ int debug_prompt(emu *gb_emu_p) {
 	  break;
 	}
 
-	uint32_t addr2_hi = (uint32_t)strtoimax(dbg_str, &endptr, 0);
+	addr2_hi = (uint32_t)strtoimax(dbg_str, &endptr, 0);
 
 	if (addr <= 0 || addr2_hi <= 0) {
 	  printf("%sPlease enter a hexadecimal address (e.g., 0xFF12)\n", ERR_SPACE);
@@ -243,6 +245,80 @@ int debug_prompt(emu *gb_emu_p) {
 	  } else {
 	    printf("%s[0x%04x] %02x\n", ERR_SPACE, addr+i, mem_val);
 	  }
+	}
+	break;
+
+      case (TOK_READ_MEM_ADDR_INST) :
+	if ((dbg_str = get_next_tok()) == NULL) {
+	  printf("%smi takes a single hexadecimal argument\n", ERR_SPACE);
+	  break;
+	}
+
+	addr = (uint16_t)strtoimax(dbg_str, &endptr, 0);
+
+	if (addr <= 0) {
+	  printf("%sPlease enter a hexadecimal address (e.g., 0x0150)\n", ERR_SPACE);
+	  break;
+	}
+
+	if ((dbg_str = get_next_tok()) != NULL) {
+	  printf("%smi takes a single argument\n", ERR_SPACE);
+	  break;
+	}
+
+	if ((mem_val = read_8(gb_emu_p, addr)) == ERR_INVALID_ADDRESS) {
+	  printf("%sPlease enter a valid (readable) memory address\n", ERR_SPACE);
+	  break;
+	}
+
+	show_inst_at_addr(gb_emu_p, addr);
+	break;
+
+      case (TOK_READ_MEM_INST_RANGE) :
+	if ((dbg_str = get_next_tok()) == NULL) {
+	  printf("%smr takes two hexadecimal arguments\n", ERR_SPACE);
+	  break;
+	}
+	addr = (uint16_t)strtoimax(dbg_str, &endptr, 0);
+
+	if ((dbg_str = get_next_tok()) == NULL) {
+	  printf("%smr takes two hexadecimal arguments\n", ERR_SPACE);
+	  break;
+	}
+
+	addr2_hi = (uint32_t)strtoimax(dbg_str, &endptr, 0);
+
+	if (addr <= 0 || addr2_hi <= 0) {
+	  printf("%sPlease enter a hexadecimal address (e.g., 0xFF12)\n", ERR_SPACE);
+	  break;
+	}
+
+	if (addr > addr2_hi) {
+	  printf("%sPlease enter memory addresses from lowest to highest\n", ERR_SPACE);
+	  break;
+	}
+
+	if (addr > INT_ENABLE_FLAG) {
+	  printf("%sPlease enter a first address less than or equal to 0x%04x\n", ERR_SPACE, INT_ENABLE_FLAG);
+	  break;
+	}
+
+	if (addr2_hi > INT_ENABLE_FLAG+1) {
+	  printf("%sPlease enter a first address less than or equal to 0x%05x\n", ERR_SPACE, INT_ENABLE_FLAG+1);
+	  break;
+	}
+
+	for (int i = 0; i < addr2_hi - addr; ) {
+	  mem_val = read_8(gb_emu_p, addr+i);
+
+	  if (mem_val == ERR_INVALID_ADDRESS) {
+	    printf("%s[0x%04x] ??\n", ERR_SPACE, addr+i);
+	    i += 1;
+	  } else {
+	    show_inst_at_addr(gb_emu_p, addr+i);
+	    i += op_length(mem_val);
+	  }
+
 	}
 	break;
 
@@ -303,6 +379,12 @@ int get_debug_tok(char *buf) {
   }
   if (strcmp(buf, DBG_STR_SHOW_REGS) == 0) {
     return TOK_SHOW_REGS;
+  }
+  if (strcmp(buf, DBG_STR_READ_MEM_ADDR_INST) == 0) {
+    return TOK_READ_MEM_ADDR_INST;
+  }
+  if (strcmp(buf, DBG_STR_READ_MEM_INST_RANGE) == 0) {
+    return TOK_READ_MEM_INST_RANGE;
   }
   return ERR_INVALID_TOKEN;
 }
@@ -387,12 +469,7 @@ bool check_breakpoint(debugger *dbg_p, uint16_t addr) {
   return false;
 }
 
-void show_previous_inst(emu *gb_emu_p) {
-  debugger *dbg_p = &(gb_emu_p->gb_debugger);
-  uint16_t addr = dbg_p->prev_inst_addr;
-  if (addr == 0) {
-    return;
-  }
+void show_inst_at_addr(emu *gb_emu_p, uint16_t addr) {
   char buf[MAX_BUF_LEN];
   int err = 0;
   if ((err = addr_to_op_str(gb_emu_p, addr, buf, MAX_BUF_LEN)) == ERR_OP_INVALID_OR_NOT_IMPLEMENTED) {
@@ -405,10 +482,27 @@ void show_previous_inst(emu *gb_emu_p) {
   }
   uint16_t op = read_8(gb_emu_p, addr);
   uint16_t inst_len = op_length(op);
-  printf("%s[0x%04x] %s%s(%02x", ERR_SPACE, addr, buf, ERR_SPACE, op);
+  // Formatting
+  uint16_t space_len = 20 - (int)strlen(buf);
+  char space[space_len];
+  for (int i = 0; i < space_len-1; i++) {
+    space[i] = ' ';
+  }
+  space[space_len-1] = '\0';
+  printf("%s[0x%04x] %s%s(%02x", ERR_SPACE, addr, buf, space, op);
   for (int i = 1; i < inst_len; i++) {
     printf(" %02x", read_8(gb_emu_p, addr+i));
   }
   printf(")\n");
   return;
+
+}
+void show_previous_inst(emu *gb_emu_p) {
+  debugger *dbg_p = &(gb_emu_p->gb_debugger);
+  uint16_t addr = dbg_p->prev_inst_addr;
+  if (addr == 0) {
+    return;
+  } else {
+    show_inst_at_addr(gb_emu_p, addr);
+  }
 }

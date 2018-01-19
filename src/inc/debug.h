@@ -53,6 +53,9 @@ bool check_breakpoint(debugger *dbg_p, uint16_t addr);
 // Displays the previous instruction executed, both in binary and in assembly
 void show_previous_inst(emu *gb_emu_p);
 
+// Displays the instruction at the given address, both in binary and in assembly
+void show_inst_at_addr(emu *gb_emu_p, uint16_t addr);
+
 enum dbg_tok {
   TOK_STEP_INST,
   TOK_STEP_N_INSTS,
@@ -65,7 +68,7 @@ enum dbg_tok {
   TOK_READ_MEM_RANGE,
   TOK_SHOW_REGS,
   TOK_READ_MEM_ADDR_INST,
-  TOK_READ_MEM_ADDR_INST_RANGE,
+  TOK_READ_MEM_INST_RANGE,
 };
 
 // Token delimiter
