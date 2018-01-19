@@ -56,6 +56,41 @@ int dispatch_op(emu *gb_emu_p) {
       set_PC(z80_p, new_pc_nj);
       break;
 
+    case (OP_LDH_A_N) :
+      z80_p->clk.cpu_cycles += 12;
+      val_8 = read_8(gb_emu_p, pc+1);
+      result_8 = read_8(gb_emu_p, HW_IO_REGS_START + val_8);
+      z80_p->regs.a = result_8;
+      set_PC(z80_p, new_pc_nj);
+      break;
+
+    /******/
+    /* CP */
+    /******/
+    case (OP_B8_CP_IV_A) :
+      z80_p->clk.cpu_cycles += 8;
+      val_8 = read_8(gb_emu_p, pc+1);
+
+      if (val_8 == z80_p->regs.a) {
+	set_flag_Z(z80_p);
+      } else {
+	reset_flag_Z(z80_p);
+      }
+
+      if (z80_p->regs.a < val_8) {
+	set_flag_C(z80_p);
+      } else {
+	reset_flag_C(z80_p);
+      }
+
+      if ((z80_p->regs.a & NIBBLE_MASK) < (val_8 & NIBBLE_MASK)) {
+	set_flag_H(z80_p);
+      } else {
+	reset_flag_H(z80_p);
+      }
+
+      set_flag_N(z80_p);
+      set_PC(z80_p, new_pc_nj);
     /*******/
     /* NOP */
     /*******/
@@ -257,6 +292,12 @@ int addr_to_op_str(emu *gb_emu_p, uint16_t addr, char *buf, int buf_len) {
     case (OP_LDH_N_A) :
       err = sprintf(buf, "ldh (0x%04x), a", HW_IO_REGS_START + read_8(gb_emu_p, addr+1));
       break;
+    case (OP_LDH_A_N) :
+      err = sprintf(buf, "ldh a, (0x%04x)", HW_IO_REGS_START + read_8(gb_emu_p, addr+1));
+      break;
+    case (OP_B8_CP_IV_A) :
+      err = sprintf(buf, "cp (0x%02x)", read_8(gb_emu_p, addr+1));
+      break;
     default :
       return ERR_OP_INVALID_OR_NOT_IMPLEMENTED;
   }
@@ -281,7 +322,9 @@ int op_length(uint16_t op) {
     case (OP_B8_LD_IV_H) :
     case (OP_B8_LD_IV_L) :
     case (OP_LDH_N_A) :
+    case (OP_LDH_A_N) :
     case (OP_B8_JR_NZ) :
+    case (OP_B8_CP_IV_A) :
       return 2;
     // 3 bytes
     case (OP_B16_LD_IV_BC) :

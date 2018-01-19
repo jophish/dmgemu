@@ -167,6 +167,7 @@ int debug_prompt(emu *gb_emu_p) {
 	printf("%sread instruction at address n: mi n (e.g., mi 0x0150)\n", ERR_SPACE);
 	printf("%sread instructions in memory range [n, m): mri n m (e.g., mri 0x150 0x160)\n", ERR_SPACE);
 	printf("%sshow internal cpu registers: r\n", ERR_SPACE);
+	printf("%sshow flag register f: f\n", ERR_SPACE);
 	printf("%sshow this help menu: help\n", ERR_SPACE);
 	break;
 
@@ -336,6 +337,13 @@ int debug_prompt(emu *gb_emu_p) {
 	printf("%sIME: %s\n", ERR_SPACE, z80_p->regs.ime ? "true" : "false");
 	break;
 
+      case (TOK_SHOW_FLAGS) :
+	if ((dbg_str = get_next_tok()) != NULL) {
+	  printf("%sf takes no arguments\n", ERR_SPACE);
+	  break;
+	}
+	printf("%sZ: %d, N: %d, H: %d, C: %d\n", ERR_SPACE, get_flag_Z(z80_p), get_flag_N(z80_p), get_flag_H(z80_p), get_flag_C(z80_p));
+	break;
       default :
 	printf("%sPlease enter a valid command (type 'help' for a list)\n", ERR_SPACE);
 	break;
@@ -379,6 +387,9 @@ int get_debug_tok(char *buf) {
   }
   if (strcmp(buf, DBG_STR_SHOW_REGS) == 0) {
     return TOK_SHOW_REGS;
+  }
+  if (strcmp(buf, DBG_STR_SHOW_FLAGS) == 0) {
+    return TOK_SHOW_FLAGS;
   }
   if (strcmp(buf, DBG_STR_READ_MEM_ADDR_INST) == 0) {
     return TOK_READ_MEM_ADDR_INST;

@@ -89,7 +89,9 @@ int read_8(emu *gb_emu_p, mem_addr addr) {
 
 
 uint16_t read_16(emu *gb_emu_p, mem_addr addr) {
-  return (((uint16_t)(gb_emu_p->gb_rom.data[addr+1])) << 8) | gb_emu_p->gb_rom.data[addr];
+  int high_byte = read_8(gb_emu_p, addr+1);
+  int low_byte = read_8(gb_emu_p, addr);
+  return (((uint16_t)(high_byte)) << 8) | low_byte;
 }
 
 

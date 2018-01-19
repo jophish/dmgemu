@@ -67,6 +67,7 @@ enum dbg_tok {
   TOK_READ_MEM_ADDR,
   TOK_READ_MEM_RANGE,
   TOK_SHOW_REGS,
+  TOK_SHOW_FLAGS,
   TOK_READ_MEM_ADDR_INST,
   TOK_READ_MEM_INST_RANGE,
 };
@@ -91,6 +92,7 @@ enum dbg_tok {
 #define DBG_STR_READ_MEM_ADDR_INST "mi"
 #define DBG_STR_READ_MEM_INST_RANGE "mri"
 #define DBG_STR_SHOW_REGS "r"
+#define DBG_STR_SHOW_FLAGS "f"
 #define DBG_STR_HELP "help"
 
 #endif /* DEBUG_H */

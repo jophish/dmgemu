@@ -27,8 +27,9 @@ int op_length(uint16_t op);
 // if the given buffer is too small for the given string
 int addr_to_op_str(emu *gb_emu_p, uint16_t addr, char *buf, int buf_len);
 
-// One byte mask
-#define BYTE_MASK 0xF
+// Masks
+#define BYTE_MASK 0xFF
+#define NIBBLE_MASK 0xF
 
 // Extended prefix
 #define PREFIX_CB 0xCB
@@ -61,11 +62,17 @@ int addr_to_op_str(emu *gb_emu_p, uint16_t addr, char *buf, int buf_len);
 // LDH n, A
 #define OP_LDH_N_A 0xE0
 
+//LDH, A, n
+#define OP_LDH_A_N 0xF0
+
 // 16-Bit Immediate Loads
 #define OP_B16_LD_IV_BC 0x01
 #define OP_B16_LD_IV_DE 0x11
 #define OP_B16_LD_IV_HL 0x21
 #define OP_B16_LD_IV_SP 0x31
+
+// CP
+#define OP_B8_CP_IV_A 0xFE
 
 // NOP
 #define OP_NOP        0x00
