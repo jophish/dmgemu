@@ -277,13 +277,13 @@ int debug_prompt(emu *gb_emu_p) {
 
       case (TOK_READ_MEM_INST_RANGE) :
 	if ((dbg_str = get_next_tok()) == NULL) {
-	  printf("%smr takes two hexadecimal arguments\n", ERR_SPACE);
+	  printf("%smri takes two hexadecimal arguments\n", ERR_SPACE);
 	  break;
 	}
 	addr = (uint16_t)strtoimax(dbg_str, &endptr, 0);
 
 	if ((dbg_str = get_next_tok()) == NULL) {
-	  printf("%smr takes two hexadecimal arguments\n", ERR_SPACE);
+	  printf("%smri takes two hexadecimal arguments\n", ERR_SPACE);
 	  break;
 	}
 

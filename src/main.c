@@ -7,7 +7,7 @@
 #include "emu.h"
 #include "debug.h"
 #include "error.h"
-
+#include "gpu.h"
 
 int main(int argc, char **argv) {
   if (argc == 1) {
@@ -35,6 +35,11 @@ int main(int argc, char **argv) {
     if (op == ERR_OP_INVALID_OR_NOT_IMPLEMENTED) {
       exit(0);
     }
+    if (op == ERR_INVALID_ADDRESS) {
+      printf("Invalid address in op\n");
+      exit(0);
+    }
+    step_gpu(gb_emu_p);
     //printf("Successfully dispatched op: %02x\n", op);
   }
 }

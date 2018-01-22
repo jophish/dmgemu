@@ -27,6 +27,9 @@ int op_length(uint16_t op);
 // if the given buffer is too small for the given string
 int addr_to_op_str(emu *gb_emu_p, uint16_t addr, char *buf, int buf_len);
 
+// Given bytes a and b to add together, checks if a half-carry will occur
+bool check_hc_add(uint8_t a, uint8_t b);
+
 // Masks
 #define BYTE_MASK 0xFF
 #define NIBBLE_MASK 0xF
@@ -45,6 +48,8 @@ int addr_to_op_str(emu *gb_emu_p, uint16_t addr, char *buf, int buf_len);
 #define OP_B8_LD_IV_E 0x1E
 #define OP_B8_LD_IV_H 0x26
 #define OP_B8_LD_IV_L 0x2E
+#define OP_B8_LD_IV_IND_HL 0x36
+
 
 // LD A, n
 #define OP_LD_A_A 0x7F
@@ -62,14 +67,18 @@ int addr_to_op_str(emu *gb_emu_p, uint16_t addr, char *buf, int buf_len);
 // LDH n, A
 #define OP_LDH_N_A 0xE0
 
-//LDH, A, n
+// LDH, A, n
 #define OP_LDH_A_N 0xF0
+
+// LDH (C), A
+#define OP_LDH_C_A 0xE2
 
 // 16-Bit Immediate Loads
 #define OP_B16_LD_IV_BC 0x01
 #define OP_B16_LD_IV_DE 0x11
 #define OP_B16_LD_IV_HL 0x21
 #define OP_B16_LD_IV_SP 0x31
+#define OP_B16_LD_IV_NN_A 0xEA
 
 // CP
 #define OP_B8_CP_IV_A 0xFE
@@ -90,6 +99,8 @@ int addr_to_op_str(emu *gb_emu_p, uint16_t addr, char *buf, int buf_len);
 // LDD
 #define OP_LDD_HL_A 0x32
 
+// LDI
+#define OP_LDI_A_HL 0x2A
 
 // DEC
 #define OP_DEC_A 0x3D
@@ -101,6 +112,15 @@ int addr_to_op_str(emu *gb_emu_p, uint16_t addr, char *buf, int buf_len);
 #define OP_DEC_L 0x2D
 #define OP_DEC_IND_HL 0x35
 
+// INC
+#define OP_INC_A 0x3C
+#define OP_INC_B 0x04
+#define OP_INC_C 0x0C
+#define OP_INC_D 0x14
+#define OP_INC_E 0x1C
+#define OP_INC_H 0x24
+#define OP_INC_L 0x2C
+#define OP_INC_IND_HL 0x34
 // Control
 #define OP_DI 0xF3
 

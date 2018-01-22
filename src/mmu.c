@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include "mmu.h"
 #include "emu.h"
 
@@ -43,6 +44,13 @@ int get_mem_region(mem_addr addr) {
   }
 }
 
+int get_hw_io_region(mem_addr addr) {
+  if (addr >= REG_LCDC && addr <= REG_WX) {
+    return REGION_IO_GPU;
+  } else {
+    return ERR_INVALID_ADDRESS;
+  }
+}
 
 int read_8(emu *gb_emu_p, mem_addr addr) {
   uint16_t buf_offset;
@@ -74,8 +82,18 @@ int read_8(emu *gb_emu_p, mem_addr addr) {
     case (REGION_RESERVED) :
       break;
     case (REGION_HW_IO_REGS) :
-      buf_offset = addr - HW_IO_REGS_START;
-      return gb_emu_p->gb_mmu.hw_io_regs[buf_offset];
+      // We have seperate handlers for the IO regs, since they belong
+      // to various different subsystems
+      switch (get_hw_io_region(addr)) {
+	case (REGION_IO_GPU) :
+	  ;
+	  gpu *gb_gpu_p = &(gb_emu_p->gb_gpu);
+	  return read_gpu_reg(gb_gpu_p, addr);
+	default :
+	  buf_offset = addr - HW_IO_REGS_START;
+	  return gb_emu_p->gb_mmu.hw_io_regs[buf_offset];
+      }
+      break;
     case (REGION_ZERO_PAGE) :
       buf_offset = addr - ZERO_PAGE_START;
       return gb_emu_p->gb_mmu.zero_page[buf_offset];
@@ -95,8 +113,9 @@ uint16_t read_16(emu *gb_emu_p, mem_addr addr) {
 }
 
 
-void write_8(emu *gb_emu_p, mem_addr addr, uint8_t val) {
+int write_8(emu *gb_emu_p, mem_addr addr, uint8_t val) {
   uint16_t buf_offset;
+  int err;
   switch (get_mem_region(addr)) {
     // These cases can safely fall through
     case (REGION_RES_INT_VEC) :
@@ -129,8 +148,21 @@ void write_8(emu *gb_emu_p, mem_addr addr, uint8_t val) {
     case (REGION_RESERVED) :
       break;
     case (REGION_HW_IO_REGS) :
-      buf_offset = addr - HW_IO_REGS_START;
-      gb_emu_p->gb_mmu.hw_io_regs[buf_offset] = val;
+      // We have seperate handlers for the IO regs, since they belong
+      // to various different subsystems
+      switch (get_hw_io_region(addr)) {
+	case (REGION_IO_GPU) :
+	  ;
+	  gpu *gb_gpu_p = &(gb_emu_p->gb_gpu);
+	  if ((err = write_gpu_reg(gb_gpu_p, addr, val)) == ERR_INVALID_ADDRESS) {
+	    return err;
+	  }
+	  break;
+	default :
+	  //printf("Writing value 0x%04x to address 0x%04x\n", val, addr);
+	  buf_offset = addr - HW_IO_REGS_START;
+	  gb_emu_p->gb_mmu.hw_io_regs[buf_offset] = val;
+      }
       break;
     case (REGION_ZERO_PAGE) :
       buf_offset = addr - ZERO_PAGE_START;
@@ -142,7 +174,7 @@ void write_8(emu *gb_emu_p, mem_addr addr, uint8_t val) {
     case (ERR_INVALID_ADDRESS) :
       printf("Error when trying to write to address.\n");
   }
-
+  return get_mem_region(addr);
 }
 
 void write_16(emu *gb_emu_p, mem_addr addr, uint16_t val) {
@@ -153,8 +185,11 @@ void write_16(emu *gb_emu_p, mem_addr addr, uint16_t val) {
 void init_mmu(mmu *mmu_p) {
   uint8_t *ram_buf = malloc(SZ_INTERNAL_RAM);
   mmu_p->ram = ram_buf;
+  memset(ram_buf, 0, SZ_INTERNAL_RAM);
   uint8_t *io_buf = malloc(SZ_HW_IO_REGS);
+  memset(io_buf, 0, SZ_HW_IO_REGS);
   mmu_p->hw_io_regs = io_buf;
   uint8_t *zero_page_buf = malloc(SZ_ZERO_PAGE);
   mmu_p->zero_page = zero_page_buf;
+  memset(zero_page_buf, 0, SZ_ZERO_PAGE);
 }
