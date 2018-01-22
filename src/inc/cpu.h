@@ -16,7 +16,8 @@ typedef struct cpu_regs {
 } cpu_regs;
 
 typedef struct clock {
-  uint32_t m_cycles, cpu_cycles;
+  unsigned long long m_cycles, cpu_cycles; // Global clock
+  uint32_t prev_m_cycles, prev_cpu_cycles; // Keeps track of the number of cycles the previous inst took
 } clock;
 
 typedef struct cpu {

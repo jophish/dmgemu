@@ -17,19 +17,22 @@ int dispatch_op(emu *gb_emu_p) {
     /*************************/
     case (OP_B8_LD_IV_A) :
       // Load Immediate 8-bit value into A
-      z80_p->clk.cpu_cycles += 8;
+      z80_p->clk.prev_cpu_cycles = 8;
+      z80_p->clk.prev_m_cycles = 2;
       val_8 = read_8(gb_emu_p, pc+1);
       z80_p->regs.a = val_8;
       set_PC(z80_p, new_pc_nj);
       break;
     case (OP_B8_LD_IV_B) :
-      z80_p->clk.cpu_cycles += 8;
+      z80_p->clk.prev_cpu_cycles = 8;
+      z80_p->clk.prev_m_cycles = 2;
       val_8 = read_8(gb_emu_p, pc+1);
       z80_p->regs.b = val_8;
       set_PC(z80_p, new_pc_nj);
       break;
     case (OP_B8_LD_IV_C) :
-      z80_p->clk.cpu_cycles += 8;
+      z80_p->clk.prev_cpu_cycles = 8;
+      z80_p->clk.prev_m_cycles = 2;
       val_8 = read_8(gb_emu_p, pc+1);
       z80_p->regs.c = val_8;
       set_PC(z80_p, new_pc_nj);
@@ -39,7 +42,8 @@ int dispatch_op(emu *gb_emu_p) {
     /* 16-Bit Immediate Loads */
     /**************************/
     case (OP_B16_LD_IV_HL) :
-      z80_p->clk.cpu_cycles += 12;
+      z80_p->clk.prev_cpu_cycles = 12;
+      z80_p->clk.prev_m_cycles = 3;
       val_16 = read_16(gb_emu_p, pc+1);
       set_HL(z80_p, val_16);
       set_PC(z80_p, new_pc_nj);
@@ -49,7 +53,8 @@ int dispatch_op(emu *gb_emu_p) {
     /* LDH */
     /*******/
     case (OP_LDH_N_A) :
-      z80_p->clk.cpu_cycles += 12;
+      z80_p->clk.prev_cpu_cycles = 12;
+      z80_p->clk.prev_m_cycles = 3;
       val_8 = read_8(gb_emu_p, pc+1);
       val_16 = HW_IO_REGS_START + val_8;
       write_8(gb_emu_p, val_16, z80_p->regs.a);
@@ -57,7 +62,8 @@ int dispatch_op(emu *gb_emu_p) {
       break;
 
     case (OP_LDH_A_N) :
-      z80_p->clk.cpu_cycles += 12;
+      z80_p->clk.prev_cpu_cycles = 12;
+      z80_p->clk.prev_m_cycles = 3;
       val_8 = read_8(gb_emu_p, pc+1);
       result_8 = read_8(gb_emu_p, HW_IO_REGS_START + val_8);
       z80_p->regs.a = result_8;
@@ -68,7 +74,8 @@ int dispatch_op(emu *gb_emu_p) {
     /* CP */
     /******/
     case (OP_B8_CP_IV_A) :
-      z80_p->clk.cpu_cycles += 8;
+      z80_p->clk.prev_cpu_cycles = 8;
+      z80_p->clk.prev_m_cycles = 2;
       val_8 = read_8(gb_emu_p, pc+1);
 
       if (val_8 == z80_p->regs.a) {
@@ -95,7 +102,8 @@ int dispatch_op(emu *gb_emu_p) {
     /* NOP */
     /*******/
     case (OP_NOP) :
-      z80_p->clk.cpu_cycles += 4;
+      z80_p->clk.prev_cpu_cycles = 4;
+      z80_p->clk.prev_m_cycles = 1;
       set_PC(z80_p, new_pc_nj);
       break;
 
@@ -103,7 +111,8 @@ int dispatch_op(emu *gb_emu_p) {
     /* Jumps */
     /*********/
     case (OP_B16_JP_IV) :
-      z80_p->clk.cpu_cycles += 12;
+      z80_p->clk.prev_cpu_cycles = 12;
+      z80_p->clk.prev_m_cycles = 3;
       uint16_t new_pc = read_16(gb_emu_p, pc+1);
       set_PC(z80_p, new_pc);
       break;
@@ -114,10 +123,12 @@ int dispatch_op(emu *gb_emu_p) {
       rel_offset = byte_to_2c(val_8) + 2;
       if (get_flag_Z(z80_p) == 0) {
 	set_PC(z80_p, pc + rel_offset);
-	z80_p->clk.cpu_cycles += 12;
+	z80_p->clk.prev_cpu_cycles = 12;
+	z80_p->clk.prev_m_cycles = 3;
       } else {
 	set_PC(z80_p, new_pc_nj);
-	z80_p->clk.cpu_cycles += 8;
+	z80_p->clk.prev_cpu_cycles = 8;
+	z80_p->clk.prev_m_cycles = 2;
       }
       break;
 
@@ -128,7 +139,8 @@ int dispatch_op(emu *gb_emu_p) {
     case (OP_XOR_A) :
       // Since we're XORing A with A, this is a degenerate case which just sets
       // register A to 0
-      z80_p->clk.cpu_cycles += 4;
+      z80_p->clk.prev_cpu_cycles = 4;
+      z80_p->clk.prev_m_cycles = 1;
       z80_p->regs.a = 0;
       set_flag_Z(z80_p);
       reset_flag_N(z80_p);
@@ -138,7 +150,8 @@ int dispatch_op(emu *gb_emu_p) {
       break;
 
     case (OP_XOR_B) :
-      z80_p->clk.cpu_cycles += 4;
+      z80_p->clk.prev_cpu_cycles = 4;
+      z80_p->clk.prev_m_cycles = 1;
       result_8 = z80_p->regs.b ^ z80_p->regs.a;
       z80_p->regs.a = result_8;
       result_8 == 0 ? set_flag_Z(z80_p) : reset_flag_Z(z80_p);
@@ -153,7 +166,8 @@ int dispatch_op(emu *gb_emu_p) {
     /*******/
     case (OP_LDD_HL_A) :
       // Load A into memory address HL, then decrement HL
-      z80_p->clk.cpu_cycles += 8;
+      z80_p->clk.prev_cpu_cycles = 8;
+      z80_p->clk.prev_m_cycles = 2;
       uint16_t address = get_HL(z80_p);
       write_8(gb_emu_p, address, z80_p->regs.a);
       set_HL(z80_p, address-1);
@@ -164,7 +178,8 @@ int dispatch_op(emu *gb_emu_p) {
     /* DEC */
     /*******/
     case (OP_DEC_B) :
-      z80_p->clk.cpu_cycles += 4;
+      z80_p->clk.prev_cpu_cycles = 4;
+      z80_p->clk.prev_m_cycles = 1;
       val_8 = z80_p->regs.b;
       if (val_8 == 0) {
 	result_8 = 0xff;
@@ -183,7 +198,8 @@ int dispatch_op(emu *gb_emu_p) {
       break;
 
     case (OP_DEC_C) :
-      z80_p->clk.cpu_cycles += 4;
+      z80_p->clk.prev_m_cycles = 1;
+      z80_p->clk.prev_cpu_cycles = 4;
       val_8 = z80_p->regs.c;
       if (val_8 == 0) {
 	result_8 = 0xff;
@@ -205,7 +221,8 @@ int dispatch_op(emu *gb_emu_p) {
     /* Control */
     /***********/
     case (OP_DI) :
-      z80_p->clk.cpu_cycles += 4;
+      z80_p->clk.prev_cpu_cycles = 4;
+      z80_p->clk.prev_m_cycles = 1;
       reset_flag_IME(z80_p);
       set_PC(z80_p, new_pc_nj);
       break;
@@ -214,6 +231,9 @@ int dispatch_op(emu *gb_emu_p) {
       return ERR_OP_INVALID_OR_NOT_IMPLEMENTED;
 
   }
+  // Update the global clock based on how many cycles we just used
+  z80_p->clk.cpu_cycles += z80_p->clk.prev_cpu_cycles;
+  z80_p->clk.m_cycles += z80_p->clk.prev_m_cycles;
   return opcode;
 }
 
