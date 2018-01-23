@@ -8,7 +8,7 @@ int dispatch_op(emu *gb_emu_p) {
   uint8_t opcode = read_8(gb_emu_p, pc);
   uint8_t val_8, result_8;
   int rel_offset;
-  uint16_t val_16, address;
+  uint16_t val_16, address, sp;
   int err;
   uint16_t new_pc_nj = pc + op_length(opcode); // New PC, given that we don't have a jump
   switch(opcode) {
@@ -49,9 +49,60 @@ int dispatch_op(emu *gb_emu_p) {
       set_PC(z80_p, new_pc_nj);
       break;
 
+    /***********/
+    /* LD A, n */
+    /***********/
+    case (OP_LD_A_A) :
+      z80_p->clk.prev_cpu_cycles = 4;
+      z80_p->clk.prev_m_cycles = 1;
+      set_PC(z80_p, new_pc_nj);
+      break;
+    case (OP_LD_A_B) :
+      z80_p->clk.prev_cpu_cycles = 4;
+      z80_p->clk.prev_m_cycles = 1;
+      z80_p->regs.a = z80_p->regs.b;
+      set_PC(z80_p, new_pc_nj);
+      break;
+    case (OP_LD_A_C) :
+      z80_p->clk.prev_cpu_cycles = 4;
+      z80_p->clk.prev_m_cycles = 1;
+      z80_p->regs.a = z80_p->regs.c;
+      set_PC(z80_p, new_pc_nj);
+      break;
+    case (OP_LD_A_D) :
+      z80_p->clk.prev_cpu_cycles = 4;
+      z80_p->clk.prev_m_cycles = 1;
+      z80_p->regs.a = z80_p->regs.d;
+      set_PC(z80_p, new_pc_nj);
+      break;
+    case (OP_LD_A_E) :
+      z80_p->clk.prev_cpu_cycles = 4;
+      z80_p->clk.prev_m_cycles = 1;
+      z80_p->regs.a = z80_p->regs.e;
+      set_PC(z80_p, new_pc_nj);
+      break;
+    case (OP_LD_A_H) :
+      z80_p->clk.prev_cpu_cycles = 4;
+      z80_p->clk.prev_m_cycles = 1;
+      z80_p->regs.a = z80_p->regs.h;
+      set_PC(z80_p, new_pc_nj);
+      break;
+    case (OP_LD_A_L) :
+      z80_p->clk.prev_cpu_cycles = 4;
+      z80_p->clk.prev_m_cycles = 1;
+      z80_p->regs.a = z80_p->regs.l;
+      set_PC(z80_p, new_pc_nj);
+      break;
     /**************************/
     /* 16-Bit Immediate Loads */
     /**************************/
+    case (OP_B16_LD_IV_BC) :
+      z80_p->clk.prev_cpu_cycles = 12;
+      z80_p->clk.prev_m_cycles = 3;
+      val_16 = read_16(gb_emu_p, pc+1);
+      set_BC(z80_p, val_16);
+      set_PC(z80_p, new_pc_nj);
+      break;
     case (OP_B16_LD_IV_HL) :
       z80_p->clk.prev_cpu_cycles = 12;
       z80_p->clk.prev_m_cycles = 3;
@@ -202,6 +253,115 @@ int dispatch_op(emu *gb_emu_p) {
       set_PC(z80_p, new_pc_nj);
       break;
 
+    /******/
+    /* OR */
+    /******/
+    case (OP_OR_A) :
+      z80_p->clk.prev_cpu_cycles = 4;
+      z80_p->clk.prev_m_cycles = 1;
+      result_8 = z80_p->regs.a | z80_p->regs.a;
+      z80_p->regs.a = result_8;
+      if (result_8 == 0) {
+	set_flag_Z(z80_p);
+      } else {
+	reset_flag_Z(z80_p);
+      }
+      reset_flag_N(z80_p);
+      reset_flag_H(z80_p);
+      reset_flag_C(z80_p);
+      set_PC(z80_p, new_pc_nj);
+      break;
+    case (OP_OR_B) :
+      z80_p->clk.prev_cpu_cycles = 4;
+      z80_p->clk.prev_m_cycles = 1;
+      result_8 = z80_p->regs.a | z80_p->regs.b;
+      z80_p->regs.a = result_8;
+      if (result_8 == 0) {
+	set_flag_Z(z80_p);
+      } else {
+	reset_flag_Z(z80_p);
+      }
+      reset_flag_N(z80_p);
+      reset_flag_H(z80_p);
+      reset_flag_C(z80_p);
+      set_PC(z80_p, new_pc_nj);
+      break;
+    case (OP_OR_C) :
+      z80_p->clk.prev_cpu_cycles = 4;
+      z80_p->clk.prev_m_cycles = 1;
+      result_8 = z80_p->regs.a | z80_p->regs.c;
+      z80_p->regs.a = result_8;
+      if (result_8 == 0) {
+	set_flag_Z(z80_p);
+      } else {
+	reset_flag_Z(z80_p);
+      }
+      reset_flag_N(z80_p);
+      reset_flag_H(z80_p);
+      reset_flag_C(z80_p);
+      set_PC(z80_p, new_pc_nj);
+      break;
+    case (OP_OR_D) :
+      z80_p->clk.prev_cpu_cycles = 4;
+      z80_p->clk.prev_m_cycles = 1;
+      result_8 = z80_p->regs.a | z80_p->regs.d;
+      z80_p->regs.a = result_8;
+      if (result_8 == 0) {
+	set_flag_Z(z80_p);
+      } else {
+	reset_flag_Z(z80_p);
+      }
+      reset_flag_N(z80_p);
+      reset_flag_H(z80_p);
+      reset_flag_C(z80_p);
+      set_PC(z80_p, new_pc_nj);
+      break;
+    case (OP_OR_E) :
+      z80_p->clk.prev_cpu_cycles = 4;
+      z80_p->clk.prev_m_cycles = 1;
+      result_8 = z80_p->regs.a | z80_p->regs.e;
+      z80_p->regs.a = result_8;
+      if (result_8 == 0) {
+	set_flag_Z(z80_p);
+      } else {
+	reset_flag_Z(z80_p);
+      }
+      reset_flag_N(z80_p);
+      reset_flag_H(z80_p);
+      reset_flag_C(z80_p);
+      set_PC(z80_p, new_pc_nj);
+      break;
+    case (OP_OR_H) :
+      z80_p->clk.prev_cpu_cycles = 4;
+      z80_p->clk.prev_m_cycles = 1;
+      result_8 = z80_p->regs.a | z80_p->regs.h;
+      z80_p->regs.a = result_8;
+      if (result_8 == 0) {
+	set_flag_Z(z80_p);
+      } else {
+	reset_flag_Z(z80_p);
+      }
+      reset_flag_N(z80_p);
+      reset_flag_H(z80_p);
+      reset_flag_C(z80_p);
+      set_PC(z80_p, new_pc_nj);
+      break;
+    case (OP_OR_L) :
+      z80_p->clk.prev_cpu_cycles = 4;
+      z80_p->clk.prev_m_cycles = 1;
+      result_8 = z80_p->regs.a | z80_p->regs.l;
+      z80_p->regs.a = result_8;
+      if (result_8 == 0) {
+	set_flag_Z(z80_p);
+      } else {
+	reset_flag_Z(z80_p);
+      }
+      reset_flag_N(z80_p);
+      reset_flag_H(z80_p);
+      reset_flag_C(z80_p);
+      set_PC(z80_p, new_pc_nj);
+      break;
+
     /*******/
     /* LDD */
     /*******/
@@ -274,6 +434,34 @@ int dispatch_op(emu *gb_emu_p) {
       set_PC(z80_p, new_pc_nj);
       break;
 
+    case (OP_DEC_BC) :
+      z80_p->clk.prev_cpu_cycles = 8;
+      z80_p->clk.prev_m_cycles = 2;
+      val_16 = get_BC(z80_p);
+      set_BC(z80_p, val_16-1);
+      set_PC(z80_p, new_pc_nj);
+      break;
+    case (OP_DEC_DE) :
+      z80_p->clk.prev_cpu_cycles = 8;
+      z80_p->clk.prev_m_cycles = 2;
+      val_16 = get_DE(z80_p);
+      set_DE(z80_p, val_16-1);
+      set_PC(z80_p, new_pc_nj);
+      break;
+    case (OP_DEC_HL) :
+      z80_p->clk.prev_cpu_cycles = 8;
+      z80_p->clk.prev_m_cycles = 2;
+      val_16 = get_HL(z80_p);
+      set_HL(z80_p, val_16-1);
+      set_PC(z80_p, new_pc_nj);
+      break;
+    case (OP_DEC_SP) :
+      z80_p->clk.prev_cpu_cycles = 8;
+      z80_p->clk.prev_m_cycles = 2;
+      val_16 = get_SP(z80_p);
+      set_SP(z80_p, val_16-1);
+      set_PC(z80_p, new_pc_nj);
+      break;
     /*******/
     /* INC */
     /*******/
@@ -294,10 +482,11 @@ int dispatch_op(emu *gb_emu_p) {
       } else {
 	reset_flag_H(z80_p);
       }
-      
+
       set_flag_N(z80_p);
       set_PC(z80_p, new_pc_nj);
       break;
+
     /***********/
     /* Control */
     /***********/
@@ -307,6 +496,32 @@ int dispatch_op(emu *gb_emu_p) {
       reset_flag_IME(z80_p);
       set_PC(z80_p, new_pc_nj);
       break;
+
+    case (OP_B16_CALL_IV) :
+      z80_p->clk.prev_cpu_cycles = 24;
+      z80_p->clk.prev_m_cycles = 6;
+      sp = get_SP(z80_p);
+      if ((err = write_8(gb_emu_p, sp-1, (uint8_t)((pc+3) >> 8))) == ERR_INVALID_ADDRESS) {
+	  return err;
+      }
+      val_8 = read_8(gb_emu_p, pc+2);
+      if ((err = write_8(gb_emu_p, sp-2, (uint8_t)(pc+3))) == ERR_INVALID_ADDRESS) {
+	  return err;
+      }
+      val_16 = read_16(gb_emu_p, pc+1);
+      set_PC(z80_p, val_16);
+      set_SP(z80_p, sp-2);
+      break;
+
+    case (OP_RET) :
+      z80_p->clk.prev_cpu_cycles = 16;
+      z80_p->clk.prev_m_cycles = 4;
+      sp = get_SP(z80_p);
+      val_16 = read_16(gb_emu_p, sp);
+      set_PC(z80_p, val_16);
+      set_SP(z80_p, sp+2);
+      break;
+
    default :
       printf("Current opcode %02x at ROM address 0x%04x not implemented.\n", opcode, pc);
       return ERR_OP_INVALID_OR_NOT_IMPLEMENTED;
@@ -331,11 +546,35 @@ int addr_to_op_str(emu *gb_emu_p, uint16_t addr, char *buf, int buf_len) {
     case (OP_XOR_A) :
       err = sprintf(buf, "xor a");
       break;
+    case (OP_OR_A) :
+      err = sprintf(buf, "or a");
+      break;
+    case (OP_OR_B) :
+      err = sprintf(buf, "or b");
+      break;
+    case (OP_OR_C) :
+      err = sprintf(buf, "or c");
+      break;
+    case (OP_OR_D) :
+      err = sprintf(buf, "or d");
+      break;
+    case (OP_OR_E) :
+      err = sprintf(buf, "or e");
+      break;
+    case (OP_OR_H) :
+      err = sprintf(buf, "or h");
+      break;
+    case (OP_OR_L) :
+      err = sprintf(buf, "or l");
+      break;
     case (OP_B16_LD_IV_HL) :
       err = sprintf(buf, "ld hl, 0x%04x", read_16(gb_emu_p, addr+1));
       break;
     case (OP_B16_LD_IV_SP) :
       err = sprintf(buf, "ld sp, 0x%04x", read_16(gb_emu_p, addr+1));
+      break;
+    case (OP_B16_LD_IV_BC) :
+      err = sprintf(buf, "ld bc, 0x%04x", read_16(gb_emu_p, addr+1));
       break;
     case (OP_B16_LD_IV_NN_A) :
       err = sprintf(buf, "ld (0x%04x), a", read_16(gb_emu_p, addr+1));
@@ -370,6 +609,27 @@ int addr_to_op_str(emu *gb_emu_p, uint16_t addr, char *buf, int buf_len) {
     case (OP_LDI_A_HL) :
       err = sprintf(buf, "ldi a, (hl)");
       break;
+    case (OP_LD_A_A) :
+      err = sprintf(buf, "ld a, a");
+      break;
+    case (OP_LD_A_B) :
+      err = sprintf(buf, "ld a, b");
+      break;
+    case (OP_LD_A_C) :
+      err = sprintf(buf, "ld a, c");
+      break;
+    case (OP_LD_A_D) :
+      err = sprintf(buf, "ld a, d");
+      break;
+    case (OP_LD_A_E) :
+      err = sprintf(buf, "ld a, e");
+      break;
+    case (OP_LD_A_H) :
+      err = sprintf(buf, "ld a, h");
+      break;
+    case (OP_LD_A_L) :
+      err = sprintf(buf, "ld a, l");
+      break;
     case (OP_DEC_A) :
       err = sprintf(buf, "dec a");
       break;
@@ -393,6 +653,18 @@ int addr_to_op_str(emu *gb_emu_p, uint16_t addr, char *buf, int buf_len) {
       break;
     case (OP_DEC_IND_HL) :
       err = sprintf(buf, "dec (hl)");
+      break;
+    case (OP_DEC_BC) :
+      err = sprintf(buf, "dec bc");
+      break;
+    case (OP_DEC_DE) :
+      err = sprintf(buf, "dec de");
+      break;
+    case (OP_DEC_HL) :
+      err = sprintf(buf, "dec hl");
+      break;
+    case (OP_DEC_SP) :
+      err = sprintf(buf, "dec sp");
       break;
     case (OP_INC_A) :
       err = sprintf(buf, "inc a");
@@ -425,6 +697,12 @@ int addr_to_op_str(emu *gb_emu_p, uint16_t addr, char *buf, int buf_len) {
       break;
     case (OP_DI) :
       err = sprintf(buf, "di");
+      break;
+    case (OP_RET) :
+      err = sprintf(buf, "ret");
+      break;
+    case (OP_B16_CALL_IV) :
+      err = sprintf(buf, "call 0x%04x", read_16(gb_emu_p, addr+1));
       break;
     case (OP_LDH_N_A) :
       err = sprintf(buf, "ldh (0x%04x), a", HW_IO_REGS_START + read_8(gb_emu_p, addr+1));
@@ -474,6 +752,7 @@ int op_length(uint16_t op) {
     case (OP_B16_LD_IV_SP) :
     case (OP_B16_LD_IV_NN_A) :
     case (OP_B16_JP_IV) :
+    case (OP_B16_CALL_IV) :
       return 3;
     default :
       // catches all 0x4x - 0xBx

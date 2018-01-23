@@ -59,15 +59,17 @@ int read_8(emu *gb_emu_p, mem_addr addr) {
     case (REGION_RES_INT_VEC) :
     case (REGION_CART_HEADER) :
     case (REGION_CART_ROM_BANK_0) :
-      return gb_emu_p->gb_rom.data[addr];
     case (REGION_CART_ROM_BANK_SWITCH) :
+      return gb_emu_p->gb_rom.data[addr];
       break;
     case (REGION_CHAR_RAM) :
       break;
     case (REGION_BG_MAP_DATA_1) :
-      break;
+      buf_offset = addr - BG_MAP_DATA_1_START;
+      return gb_emu_p->gb_mmu.bg_map_data_1[buf_offset];
     case (REGION_BG_MAP_DATA_2) :
-      break;
+      buf_offset = addr - BG_MAP_DATA_2_START;
+      return gb_emu_p->gb_mmu.bg_map_data_2[buf_offset];
     case (REGION_CART_RAM) :
       break;
     // On the DMG, the internal RAM doesn't have a switchable bank
@@ -121,15 +123,19 @@ int write_8(emu *gb_emu_p, mem_addr addr, uint8_t val) {
     case (REGION_RES_INT_VEC) :
     case (REGION_CART_HEADER) :
     case (REGION_CART_ROM_BANK_0) :
-      // Illegal write here  Can't write to ROM
-      break;
     case (REGION_CART_ROM_BANK_SWITCH) :
+      // Illegal write here  Can't write to ROM
       break;
     case (REGION_CHAR_RAM) :
       break;
     case (REGION_BG_MAP_DATA_1) :
+      ;
+      buf_offset = addr - BG_MAP_DATA_1_START;
+      gb_emu_p->gb_mmu.bg_map_data_1[buf_offset] = val;
       break;
     case (REGION_BG_MAP_DATA_2) :
+      buf_offset = addr - BG_MAP_DATA_2_START;
+      gb_emu_p->gb_mmu.bg_map_data_2[buf_offset] = val;
       break;
     case (REGION_CART_RAM) :
       break;
@@ -192,4 +198,10 @@ void init_mmu(mmu *mmu_p) {
   uint8_t *zero_page_buf = malloc(SZ_ZERO_PAGE);
   mmu_p->zero_page = zero_page_buf;
   memset(zero_page_buf, 0, SZ_ZERO_PAGE);
+  uint8_t *bg_data_1_buf = malloc(SZ_BG_MAP_DATA_1);
+  mmu_p->bg_map_data_1 = bg_data_1_buf;
+  memset(bg_data_1_buf, 0, SZ_BG_MAP_DATA_1);
+  uint8_t *bg_data_2_buf = malloc(SZ_BG_MAP_DATA_2);
+  mmu_p->bg_map_data_2 = bg_data_2_buf;
+  memset(bg_data_2_buf, 0, SZ_BG_MAP_DATA_2);
 }

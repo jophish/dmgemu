@@ -96,6 +96,17 @@ bool check_hc_add(uint8_t a, uint8_t b);
 #define OP_XOR_A 0xAF
 #define OP_XOR_B 0xA8
 
+// OR
+#define OP_OR_A 0xB7
+#define OP_OR_B 0xB0
+#define OP_OR_C 0xB1
+#define OP_OR_D 0xB2
+#define OP_OR_E 0xB3
+#define OP_OR_H 0xB4
+#define OP_OR_L 0xB5
+#define OP_OR_IND_HL 0xB6
+#define OP_B8_OR_IV 0xF6
+
 // LDD
 #define OP_LDD_HL_A 0x32
 
@@ -112,6 +123,11 @@ bool check_hc_add(uint8_t a, uint8_t b);
 #define OP_DEC_L 0x2D
 #define OP_DEC_IND_HL 0x35
 
+#define OP_DEC_BC 0x0B
+#define OP_DEC_DE 0x1B
+#define OP_DEC_HL 0x2B
+#define OP_DEC_SP 0x3B
+
 // INC
 #define OP_INC_A 0x3C
 #define OP_INC_B 0x04
@@ -121,7 +137,10 @@ bool check_hc_add(uint8_t a, uint8_t b);
 #define OP_INC_H 0x24
 #define OP_INC_L 0x2C
 #define OP_INC_IND_HL 0x34
+
 // Control
 #define OP_DI 0xF3
+#define OP_B16_CALL_IV 0xCD
+#define OP_RET 0xC9
 
 #endif /* OPCODES_H */
