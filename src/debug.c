@@ -114,7 +114,7 @@ int debug_prompt(emu *gb_emu_p) {
 	  break;
 	}
 
-	printf("Breakpoint set at address 0x%04x\n", addr);
+	printf("%sBreakpoint set at address 0x%04x\n", ERR_SPACE, addr);
 	break;
 
       case (TOK_RM_BP) :

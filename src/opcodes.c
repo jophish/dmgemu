@@ -487,6 +487,33 @@ int dispatch_op(emu *gb_emu_p) {
       set_PC(z80_p, new_pc_nj);
       break;
 
+    /*******/
+    /* AND */
+    /*******/
+    case (OP_B8_AND_IV) :
+      z80_p->clk.prev_m_cycles = 2;
+      z80_p->clk.prev_cpu_cycles = 8;
+      val_8 = read_8(gb_emu_p, pc+1);
+      z80_p->regs.a = z80_p->regs.a & val_8;
+      if (z80_p->regs.a == 0) {
+	set_flag_Z(z80_p);
+      }
+      reset_flag_N(z80_p);
+      set_flag_H(z80_p);
+      reset_flag_C(z80_p);
+      set_PC(z80_p, new_pc_nj);
+      break;
+    /*******/
+    /* CPL */
+    /*******/
+    case (OP_CPL) :
+      z80_p->clk.prev_m_cycles = 1;
+      z80_p->clk.prev_cpu_cycles = 4;
+      set_flag_N(z80_p);
+      set_flag_H(z80_p);
+      z80_p->regs.a = ~(z80_p->regs.a);
+      set_PC(z80_p, new_pc_nj);
+      break;
     /***********/
     /* Control */
     /***********/
@@ -494,6 +521,13 @@ int dispatch_op(emu *gb_emu_p) {
       z80_p->clk.prev_cpu_cycles = 4;
       z80_p->clk.prev_m_cycles = 1;
       reset_flag_IME(z80_p);
+      set_PC(z80_p, new_pc_nj);
+      break;
+
+    case (OP_EI) :
+      z80_p->clk.prev_cpu_cycles = 4;
+      z80_p->clk.prev_m_cycles = 1;
+      set_flag_IME(z80_p);
       set_PC(z80_p, new_pc_nj);
       break;
 
@@ -666,6 +700,9 @@ int addr_to_op_str(emu *gb_emu_p, uint16_t addr, char *buf, int buf_len) {
     case (OP_DEC_SP) :
       err = sprintf(buf, "dec sp");
       break;
+    case (OP_B8_AND_IV) :
+      err = sprintf(buf, "and 0x%02x", read_8(gb_emu_p, addr+1));
+      break;
     case (OP_INC_A) :
       err = sprintf(buf, "inc a");
       break;
@@ -697,6 +734,12 @@ int addr_to_op_str(emu *gb_emu_p, uint16_t addr, char *buf, int buf_len) {
       break;
     case (OP_DI) :
       err = sprintf(buf, "di");
+      break;
+    case (OP_CPL) :
+      err = sprintf(buf, "cpl");
+      break;
+    case (OP_EI) :
+      err = sprintf(buf, "ei");
       break;
     case (OP_RET) :
       err = sprintf(buf, "ret");
@@ -744,6 +787,7 @@ int op_length(uint16_t op) {
     case (OP_LDH_A_N) :
     case (OP_B8_JR_NZ) :
     case (OP_B8_CP_IV_A) :
+    case (OP_B8_AND_IV) :
       return 2;
     // 3 bytes
     case (OP_B16_LD_IV_BC) :

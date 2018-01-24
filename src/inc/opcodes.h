@@ -14,6 +14,10 @@
 // instruction executed.
 int dispatch_op(emu *gb_emu_p);
 
+// Given an emulator, executes the instruction at the current PC,
+// given that the isntruction is an extended 0xCB op
+int dispatch_cb_op(emu *gb_emu_p);
+
 // Given an opcode, returns the number of bytes it takes up,
 // including any immediate values. The op argument is 2 bytes
 // in order to account for 2-byte long opcodes, using the CB
@@ -49,7 +53,6 @@ bool check_hc_add(uint8_t a, uint8_t b);
 #define OP_B8_LD_IV_H 0x26
 #define OP_B8_LD_IV_L 0x2E
 #define OP_B8_LD_IV_IND_HL 0x36
-
 
 // LD A, n
 #define OP_LD_A_A 0x7F
@@ -138,9 +141,24 @@ bool check_hc_add(uint8_t a, uint8_t b);
 #define OP_INC_L 0x2C
 #define OP_INC_IND_HL 0x34
 
+// AND
+#define OP_AND_A 0xA7
+#define OP_AND_B 0xA0
+#define OP_AND_C 0xA1
+#define OP_AND_D 0xA2
+#define OP_AND_E 0xA3
+#define OP_AND_H 0xA4
+#define OP_AND_L 0xA5
+#define OP_AND_IND_HL 0xA6
+#define OP_B8_AND_IV 0xE6
+
 // Control
 #define OP_DI 0xF3
+#define OP_EI 0xFB
 #define OP_B16_CALL_IV 0xCD
 #define OP_RET 0xC9
+
+// CPL
+#define OP_CPL 0x2F
 
 #endif /* OPCODES_H */

@@ -86,8 +86,10 @@ int write_gpu_reg(gpu *gb_gpu_p, uint16_t addr, uint8_t val) {
       // Register not writeable
       break;
     case (REG_LYC) :
-      return ERR_INVALID_ADDRESS;
+      gb_gpu_p->gb_gpu_regs.reg_lyc = val;
+      break;
     case (REG_DMA) :
+      // Initiaites a DMA transfer
       return ERR_INVALID_ADDRESS;
     case (REG_BGP) :
       gb_gpu_p->gb_gpu_regs.reg_bgp = val;
@@ -99,9 +101,11 @@ int write_gpu_reg(gpu *gb_gpu_p, uint16_t addr, uint8_t val) {
       gb_gpu_p->gb_gpu_regs.reg_obp1 = val;
       break;
     case (REG_WY) :
-      return ERR_INVALID_ADDRESS;
+      gb_gpu_p->gb_gpu_regs.reg_wy = val;
+      break;
     case (REG_WX) :
-      return ERR_INVALID_ADDRESS;
+      gb_gpu_p->gb_gpu_regs.reg_wx = val;
+      break;
     default :
       return ERR_INVALID_ADDRESS;
   }
@@ -125,8 +129,9 @@ int read_gpu_reg(gpu *gb_gpu_p, uint16_t addr) {
     case (REG_LY) :
       return gb_gpu_p->gb_gpu_regs.reg_ly;
     case (REG_LYC) :
-      return ERR_INVALID_ADDRESS;
+      return gb_gpu_p->gb_gpu_regs.reg_lyc;
     case (REG_DMA) :
+      // Register is write-only
       return ERR_INVALID_ADDRESS;
     case (REG_BGP) :
       return gb_gpu_p->gb_gpu_regs.reg_bgp;
@@ -135,9 +140,9 @@ int read_gpu_reg(gpu *gb_gpu_p, uint16_t addr) {
     case (REG_OBP1) :
       return gb_gpu_p->gb_gpu_regs.reg_obp1;
     case (REG_WY) :
-      return ERR_INVALID_ADDRESS;
+      return gb_gpu_p->gb_gpu_regs.reg_wy;
     case (REG_WX) :
-      return ERR_INVALID_ADDRESS;
+      return gb_gpu_p->gb_gpu_regs.reg_wx;
     default :
       return ERR_INVALID_ADDRESS;
   }
