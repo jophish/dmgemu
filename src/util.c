@@ -22,3 +22,7 @@ int get_user_input(char *buf, int size) {
  }
  return 0;
 }
+
+uint8_t get_dd_code(uint8_t op) {
+  return (op & DD_MASK) >> 4;
+}

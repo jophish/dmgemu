@@ -2,536 +2,89 @@
 #include <stdlib.h>
 #include <string.h>
 
-int dispatch_op(emu *gb_emu_p) {
+int dd_to_reg_pair(cpu *z80_p, int dd_code, reg_pair *reg_pair_p){
+  switch (dd_code) {
+  case (DD_PAIR_CODE_BC):
+    ;
+    *reg_pair_p = (reg_pair) {&(z80_p->regs.b), &(z80_p->regs.c)};
+    break;
+  case (DD_PAIR_CODE_DE):
+    ;
+    *reg_pair_p = (reg_pair) {&(z80_p->regs.d), &(z80_p->regs.e)};
+    break;
+  case (DD_PAIR_CODE_HL):
+    ;
+    *reg_pair_p = (reg_pair) {&(z80_p->regs.h), &(z80_p->regs.l)};
+    break;
+  case (DD_PAIR_CODE_SP):
+    ;
+    // this is... a hack
+    *reg_pair_p = (reg_pair) {(uint8_t *)&(z80_p->regs.sp), (uint8_t *)((void *)&(z80_p->regs.sp)+1)};
+    break;
+  default:
+    return ERR_INVALID_DD_PAIR;
+  }
+  return 0;
+}
+
+int op_ld_dd_16im(emu *gb_emu_p, int dd_code, uint16_t val) {
+  reg_pair regs;
+  cpu *z80_p = &(gb_emu_p->z80);
+  int err;
+  if ((err = dd_to_reg_pair(z80_p, dd_code, &regs)) == ERR_INVALID_DD_PAIR)
+    return err;
+  *(regs.r1) = (uint8_t)(val >> 8);
+  *(regs.r2) = (uint8_t)(val & LSB_MASK);
+  return 0;
+}
+
+int dispatch_op(emu *gb_emu_p, opcode *op_p) {
   cpu *z80_p = &(gb_emu_p->z80);
   uint16_t pc = get_PC(z80_p);
-  uint8_t opcode = read_8(gb_emu_p, pc);
-  uint8_t val_8, result_8;
-  int rel_offset;
-  uint16_t val_16, address, sp;
+  uint16_t op = read_8(gb_emu_p, pc);
+  uint8_t cycles;
+  uint16_t new_pc, b16_im;
+  opcode op_struct;
   int err;
-  uint16_t new_pc_nj = pc + op_length(opcode); // New PC, given that we don't have a jump
-  switch(opcode) {
-
-    /*************************/
-    /* 8-Bit Immediate Loads */
-    /*************************/
-    case (OP_B8_LD_IV_A) :
-      // Load Immediate 8-bit value into A
-      z80_p->clk.prev_cpu_cycles = 8;
-      z80_p->clk.prev_m_cycles = 2;
-      val_8 = read_8(gb_emu_p, pc+1);
-      z80_p->regs.a = val_8;
-      set_PC(z80_p, new_pc_nj);
-      break;
-    case (OP_B8_LD_IV_B) :
-      z80_p->clk.prev_cpu_cycles = 8;
-      z80_p->clk.prev_m_cycles = 2;
-      val_8 = read_8(gb_emu_p, pc+1);
-      z80_p->regs.b = val_8;
-      set_PC(z80_p, new_pc_nj);
-      break;
-    case (OP_B8_LD_IV_C) :
-      z80_p->clk.prev_cpu_cycles = 8;
-      z80_p->clk.prev_m_cycles = 2;
-      val_8 = read_8(gb_emu_p, pc+1);
-      z80_p->regs.c = val_8;
-      set_PC(z80_p, new_pc_nj);
-      break;
-    case (OP_B8_LD_IV_IND_HL) :
-      z80_p->clk.prev_cpu_cycles = 12;
-      z80_p->clk.prev_m_cycles = 3;
-      val_8 = read_8(gb_emu_p, pc+1);
-      val_16 = get_HL(z80_p);
-      if ((err = write_8(gb_emu_p, val_16, val_8)) == ERR_INVALID_ADDRESS) {
-	return err;
-      }
-      set_PC(z80_p, new_pc_nj);
-      break;
-
-    /***********/
-    /* LD A, n */
-    /***********/
-    case (OP_LD_A_A) :
-      z80_p->clk.prev_cpu_cycles = 4;
-      z80_p->clk.prev_m_cycles = 1;
-      set_PC(z80_p, new_pc_nj);
-      break;
-    case (OP_LD_A_B) :
-      z80_p->clk.prev_cpu_cycles = 4;
-      z80_p->clk.prev_m_cycles = 1;
-      z80_p->regs.a = z80_p->regs.b;
-      set_PC(z80_p, new_pc_nj);
-      break;
-    case (OP_LD_A_C) :
-      z80_p->clk.prev_cpu_cycles = 4;
-      z80_p->clk.prev_m_cycles = 1;
-      z80_p->regs.a = z80_p->regs.c;
-      set_PC(z80_p, new_pc_nj);
-      break;
-    case (OP_LD_A_D) :
-      z80_p->clk.prev_cpu_cycles = 4;
-      z80_p->clk.prev_m_cycles = 1;
-      z80_p->regs.a = z80_p->regs.d;
-      set_PC(z80_p, new_pc_nj);
-      break;
-    case (OP_LD_A_E) :
-      z80_p->clk.prev_cpu_cycles = 4;
-      z80_p->clk.prev_m_cycles = 1;
-      z80_p->regs.a = z80_p->regs.e;
-      set_PC(z80_p, new_pc_nj);
-      break;
-    case (OP_LD_A_H) :
-      z80_p->clk.prev_cpu_cycles = 4;
-      z80_p->clk.prev_m_cycles = 1;
-      z80_p->regs.a = z80_p->regs.h;
-      set_PC(z80_p, new_pc_nj);
-      break;
-    case (OP_LD_A_L) :
-      z80_p->clk.prev_cpu_cycles = 4;
-      z80_p->clk.prev_m_cycles = 1;
-      z80_p->regs.a = z80_p->regs.l;
-      set_PC(z80_p, new_pc_nj);
-      break;
-    /**************************/
-    /* 16-Bit Immediate Loads */
-    /**************************/
-    case (OP_B16_LD_IV_BC) :
-      z80_p->clk.prev_cpu_cycles = 12;
-      z80_p->clk.prev_m_cycles = 3;
-      val_16 = read_16(gb_emu_p, pc+1);
-      set_BC(z80_p, val_16);
-      set_PC(z80_p, new_pc_nj);
-      break;
-    case (OP_B16_LD_IV_HL) :
-      z80_p->clk.prev_cpu_cycles = 12;
-      z80_p->clk.prev_m_cycles = 3;
-      val_16 = read_16(gb_emu_p, pc+1);
-      set_HL(z80_p, val_16);
-      set_PC(z80_p, new_pc_nj);
-      break;
-
-    case (OP_B16_LD_IV_SP) :
-      z80_p->clk.prev_cpu_cycles = 12;
-      z80_p->clk.prev_m_cycles = 3;
-      val_16 = read_16(gb_emu_p, pc+1);
-      set_SP(z80_p, val_16);
-      set_PC(z80_p, new_pc_nj);
-      break;
-
-    case (OP_B16_LD_IV_NN_A) :
-      z80_p->clk.prev_cpu_cycles = 16;
-      z80_p->clk.prev_m_cycles = 4;
-      val_16 = read_16(gb_emu_p, pc+1);
-      if ((err = write_8(gb_emu_p, val_16, z80_p->regs.a)) == ERR_INVALID_ADDRESS) {
-	return err;
-      }
-      set_PC(z80_p, new_pc_nj);
-      break;
-
-    /*******/
-    /* LDH */
-    /*******/
-    case (OP_LDH_N_A) :
-      z80_p->clk.prev_cpu_cycles = 12;
-      z80_p->clk.prev_m_cycles = 3;
-      val_8 = read_8(gb_emu_p, pc+1);
-      val_16 = HW_IO_REGS_START + val_8;
-      if ((err = write_8(gb_emu_p, val_16, z80_p->regs.a)) == ERR_INVALID_ADDRESS) {
-	return err;
-      }
-      set_PC(z80_p, new_pc_nj);
-      break;
-
-    case (OP_LDH_A_N) :
-      z80_p->clk.prev_cpu_cycles = 12;
-      z80_p->clk.prev_m_cycles = 3;
-      val_8 = read_8(gb_emu_p, pc+1);
-      result_8 = read_8(gb_emu_p, HW_IO_REGS_START + val_8);
-      z80_p->regs.a = result_8;
-      set_PC(z80_p, new_pc_nj);
-      break;
-
-    case (OP_LDH_C_A) :
-      z80_p->clk.prev_cpu_cycles = 8;
-      z80_p->clk.prev_m_cycles = 2;
-      val_16 = HW_IO_REGS_START + z80_p->regs.c;
-      if ((err = write_8(gb_emu_p, val_16, z80_p->regs.a)) == ERR_INVALID_ADDRESS) {
-	return err;
-      }
-      set_PC(z80_p, new_pc_nj);
-      break;
-
-    /******/
-    /* CP */
-    /******/
-    case (OP_B8_CP_IV_A) :
-      z80_p->clk.prev_cpu_cycles = 8;
-      z80_p->clk.prev_m_cycles = 2;
-      val_8 = read_8(gb_emu_p, pc+1);
-
-      if (val_8 == z80_p->regs.a) {
-	set_flag_Z(z80_p);
-      } else {
-	reset_flag_Z(z80_p);
-      }
-
-      if (z80_p->regs.a < val_8) {
-	set_flag_C(z80_p);
-      } else {
-	reset_flag_C(z80_p);
-      }
-
-      if ((z80_p->regs.a & NIBBLE_MASK) < (val_8 & NIBBLE_MASK)) {
-	set_flag_H(z80_p);
-      } else {
-	reset_flag_H(z80_p);
-      }
-
-      set_flag_N(z80_p);
-      set_PC(z80_p, new_pc_nj);
-    /*******/
-    /* NOP */
-    /*******/
-    case (OP_NOP) :
-      z80_p->clk.prev_cpu_cycles = 4;
-      z80_p->clk.prev_m_cycles = 1;
-      set_PC(z80_p, new_pc_nj);
-      break;
-
-    /*********/
-    /* Jumps */
-    /*********/
-    case (OP_B16_JP_IV) :
-      z80_p->clk.prev_cpu_cycles = 12;
-      z80_p->clk.prev_m_cycles = 3;
-      uint16_t new_pc = read_16(gb_emu_p, pc+1);
-      set_PC(z80_p, new_pc);
-      break;
-
-    case (OP_B8_JR_NZ) :
-      // Relative jump if Z == 0
-      val_8 = read_8(gb_emu_p, pc+1);
-      rel_offset = byte_to_2c(val_8) + 2;
-      if (get_flag_Z(z80_p) == 0) {
-	set_PC(z80_p, pc + rel_offset);
-	z80_p->clk.prev_cpu_cycles = 12;
-	z80_p->clk.prev_m_cycles = 3;
-      } else {
-	set_PC(z80_p, new_pc_nj);
-	z80_p->clk.prev_cpu_cycles = 8;
-	z80_p->clk.prev_m_cycles = 2;
-      }
-      break;
-
-    /*******/
-    /* XOR */
-    /*******/
-    // XOR against register A, stores result in A
-    case (OP_XOR_A) :
-      // Since we're XORing A with A, this is a degenerate case which just sets
-      // register A to 0
-      z80_p->clk.prev_cpu_cycles = 4;
-      z80_p->clk.prev_m_cycles = 1;
-      z80_p->regs.a = 0;
-      set_flag_Z(z80_p);
-      reset_flag_N(z80_p);
-      reset_flag_H(z80_p);
-      reset_flag_C(z80_p);
-      set_PC(z80_p, new_pc_nj);
-      break;
-
-    case (OP_XOR_B) :
-      z80_p->clk.prev_cpu_cycles = 4;
-      z80_p->clk.prev_m_cycles = 1;
-      result_8 = z80_p->regs.b ^ z80_p->regs.a;
-      z80_p->regs.a = result_8;
-      result_8 == 0 ? set_flag_Z(z80_p) : reset_flag_Z(z80_p);
-      reset_flag_N(z80_p);
-      reset_flag_H(z80_p);
-      reset_flag_C(z80_p);
-      set_PC(z80_p, new_pc_nj);
-      break;
-
-    /******/
-    /* OR */
-    /******/
-    case (OP_OR_A) :
-      z80_p->clk.prev_cpu_cycles = 4;
-      z80_p->clk.prev_m_cycles = 1;
-      result_8 = z80_p->regs.a | z80_p->regs.a;
-      z80_p->regs.a = result_8;
-      if (result_8 == 0) {
-	set_flag_Z(z80_p);
-      } else {
-	reset_flag_Z(z80_p);
-      }
-      reset_flag_N(z80_p);
-      reset_flag_H(z80_p);
-      reset_flag_C(z80_p);
-      set_PC(z80_p, new_pc_nj);
-      break;
-    case (OP_OR_B) :
-      z80_p->clk.prev_cpu_cycles = 4;
-      z80_p->clk.prev_m_cycles = 1;
-      result_8 = z80_p->regs.a | z80_p->regs.b;
-      z80_p->regs.a = result_8;
-      if (result_8 == 0) {
-	set_flag_Z(z80_p);
-      } else {
-	reset_flag_Z(z80_p);
-      }
-      reset_flag_N(z80_p);
-      reset_flag_H(z80_p);
-      reset_flag_C(z80_p);
-      set_PC(z80_p, new_pc_nj);
-      break;
-    case (OP_OR_C) :
-      z80_p->clk.prev_cpu_cycles = 4;
-      z80_p->clk.prev_m_cycles = 1;
-      result_8 = z80_p->regs.a | z80_p->regs.c;
-      z80_p->regs.a = result_8;
-      if (result_8 == 0) {
-	set_flag_Z(z80_p);
-      } else {
-	reset_flag_Z(z80_p);
-      }
-      reset_flag_N(z80_p);
-      reset_flag_H(z80_p);
-      reset_flag_C(z80_p);
-      set_PC(z80_p, new_pc_nj);
-      break;
-    case (OP_OR_D) :
-      z80_p->clk.prev_cpu_cycles = 4;
-      z80_p->clk.prev_m_cycles = 1;
-      result_8 = z80_p->regs.a | z80_p->regs.d;
-      z80_p->regs.a = result_8;
-      if (result_8 == 0) {
-	set_flag_Z(z80_p);
-      } else {
-	reset_flag_Z(z80_p);
-      }
-      reset_flag_N(z80_p);
-      reset_flag_H(z80_p);
-      reset_flag_C(z80_p);
-      set_PC(z80_p, new_pc_nj);
-      break;
-    case (OP_OR_E) :
-      z80_p->clk.prev_cpu_cycles = 4;
-      z80_p->clk.prev_m_cycles = 1;
-      result_8 = z80_p->regs.a | z80_p->regs.e;
-      z80_p->regs.a = result_8;
-      if (result_8 == 0) {
-	set_flag_Z(z80_p);
-      } else {
-	reset_flag_Z(z80_p);
-      }
-      reset_flag_N(z80_p);
-      reset_flag_H(z80_p);
-      reset_flag_C(z80_p);
-      set_PC(z80_p, new_pc_nj);
-      break;
-    case (OP_OR_H) :
-      z80_p->clk.prev_cpu_cycles = 4;
-      z80_p->clk.prev_m_cycles = 1;
-      result_8 = z80_p->regs.a | z80_p->regs.h;
-      z80_p->regs.a = result_8;
-      if (result_8 == 0) {
-	set_flag_Z(z80_p);
-      } else {
-	reset_flag_Z(z80_p);
-      }
-      reset_flag_N(z80_p);
-      reset_flag_H(z80_p);
-      reset_flag_C(z80_p);
-      set_PC(z80_p, new_pc_nj);
-      break;
-    case (OP_OR_L) :
-      z80_p->clk.prev_cpu_cycles = 4;
-      z80_p->clk.prev_m_cycles = 1;
-      result_8 = z80_p->regs.a | z80_p->regs.l;
-      z80_p->regs.a = result_8;
-      if (result_8 == 0) {
-	set_flag_Z(z80_p);
-      } else {
-	reset_flag_Z(z80_p);
-      }
-      reset_flag_N(z80_p);
-      reset_flag_H(z80_p);
-      reset_flag_C(z80_p);
-      set_PC(z80_p, new_pc_nj);
-      break;
-
-    /*******/
-    /* LDD */
-    /*******/
-    case (OP_LDD_HL_A) :
-      // Load A into memory address HL, then decrement HL
-      z80_p->clk.prev_cpu_cycles = 8;
-      z80_p->clk.prev_m_cycles = 2;
-      address = get_HL(z80_p);
-      if ((err = write_8(gb_emu_p, address, z80_p->regs.a)) == ERR_INVALID_ADDRESS) {
-	return err;
-      }
-      set_HL(z80_p, address-1);
-      set_PC(z80_p, new_pc_nj);
-      break;
-
-    /*******/
-    /* LDI */
-    /*******/
-    case (OP_LDI_A_HL) :
-      // Load the value at (HL) into A, then increment HL
-      z80_p->clk.prev_cpu_cycles = 8;
-      z80_p->clk.prev_m_cycles = 2;
-      address = get_HL(z80_p);
-      val_8 = read_8(gb_emu_p, address);
-      z80_p->regs.a = val_8;
-      set_HL(z80_p, address+1);
-      set_PC(z80_p, new_pc_nj);
-      break;
-
-    /*******/
-    /* DEC */
-    /*******/
-    case (OP_DEC_B) :
-      z80_p->clk.prev_cpu_cycles = 4;
-      z80_p->clk.prev_m_cycles = 1;
-      val_8 = z80_p->regs.b;
-      if (val_8 == 0) {
-	result_8 = 0xff;
-      } else {
-	result_8 = val_8 - 1;
-      }
-      z80_p->regs.b = result_8;
-      result_8 == 0 ? set_flag_Z(z80_p) : reset_flag_Z(z80_p);
-      set_flag_N(z80_p);
-      // If the lower nibble of the original value is less than the lower nibble of what we're subtracting, we need a half-carry
-      // https://gist.github.com/Palmr/4526839
-
-      // We can cheat here, since we're always just decrementing.
-      (val_8 >> 4) == 0 ? set_flag_H(z80_p) : reset_flag_H(z80_p);
-      set_PC(z80_p, new_pc_nj);
-      break;
-
-    case (OP_DEC_C) :
-      z80_p->clk.prev_m_cycles = 1;
-      z80_p->clk.prev_cpu_cycles = 4;
-      val_8 = z80_p->regs.c;
-      if (val_8 == 0) {
-	result_8 = 0xff;
-      } else {
-	result_8 = val_8 - 1;
-      }
-      z80_p->regs.c = result_8;
-      result_8 == 0 ? set_flag_Z(z80_p) : reset_flag_Z(z80_p);
-      set_flag_N(z80_p);
-      // If the lower nibble of the original value is less than the lower nibble of what we're subtracting, we need a half-carry
-      // https://gist.github.com/Palmr/4526839
-
-      // We can cheat here, since we're always just decrementing.
-      (val_8 >> 4) == 0 ? set_flag_H(z80_p) : reset_flag_H(z80_p);
-      set_PC(z80_p, new_pc_nj);
-      break;
-
-    case (OP_DEC_BC) :
-      z80_p->clk.prev_cpu_cycles = 8;
-      z80_p->clk.prev_m_cycles = 2;
-      val_16 = get_BC(z80_p);
-      set_BC(z80_p, val_16-1);
-      set_PC(z80_p, new_pc_nj);
-      break;
-    case (OP_DEC_DE) :
-      z80_p->clk.prev_cpu_cycles = 8;
-      z80_p->clk.prev_m_cycles = 2;
-      val_16 = get_DE(z80_p);
-      set_DE(z80_p, val_16-1);
-      set_PC(z80_p, new_pc_nj);
-      break;
-    case (OP_DEC_HL) :
-      z80_p->clk.prev_cpu_cycles = 8;
-      z80_p->clk.prev_m_cycles = 2;
-      val_16 = get_HL(z80_p);
-      set_HL(z80_p, val_16-1);
-      set_PC(z80_p, new_pc_nj);
-      break;
-    case (OP_DEC_SP) :
-      z80_p->clk.prev_cpu_cycles = 8;
-      z80_p->clk.prev_m_cycles = 2;
-      val_16 = get_SP(z80_p);
-      set_SP(z80_p, val_16-1);
-      set_PC(z80_p, new_pc_nj);
-      break;
-    /*******/
-    /* INC */
-    /*******/
-    case (OP_INC_C) :
-      z80_p->clk.prev_m_cycles = 1;
-      z80_p->clk.prev_cpu_cycles = 4;
-      val_8 = z80_p->regs.c;
-      if (val_8 == 0xff) {
-	result_8 = 0;
-	set_flag_Z(z80_p);
-      } else {
-	result_8 = val_8 + 1;
-	reset_flag_Z(z80_p);
-      }
-      z80_p->regs.c = result_8;
-      if (check_hc_add(z80_p->regs.c, 1)) {
-	set_flag_H(z80_p);
-      } else {
-	reset_flag_H(z80_p);
-      }
-
-      set_flag_N(z80_p);
-      set_PC(z80_p, new_pc_nj);
-      break;
-
-    /***********/
-    /* Control */
-    /***********/
-    case (OP_DI) :
-      z80_p->clk.prev_cpu_cycles = 4;
-      z80_p->clk.prev_m_cycles = 1;
-      reset_flag_IME(z80_p);
-      set_PC(z80_p, new_pc_nj);
-      break;
-
-    case (OP_B16_CALL_IV) :
-      z80_p->clk.prev_cpu_cycles = 24;
-      z80_p->clk.prev_m_cycles = 6;
-      sp = get_SP(z80_p);
-      if ((err = write_8(gb_emu_p, sp-1, (uint8_t)((pc+3) >> 8))) == ERR_INVALID_ADDRESS) {
-	  return err;
-      }
-      val_8 = read_8(gb_emu_p, pc+2);
-      if ((err = write_8(gb_emu_p, sp-2, (uint8_t)(pc+3))) == ERR_INVALID_ADDRESS) {
-	  return err;
-      }
-      val_16 = read_16(gb_emu_p, pc+1);
-      set_PC(z80_p, val_16);
-      set_SP(z80_p, sp-2);
-      break;
-
-    case (OP_RET) :
-      z80_p->clk.prev_cpu_cycles = 16;
-      z80_p->clk.prev_m_cycles = 4;
-      sp = get_SP(z80_p);
-      val_16 = read_16(gb_emu_p, sp);
-      set_PC(z80_p, val_16);
-      set_SP(z80_p, sp+2);
-      break;
-
-   default :
-      printf("Current opcode %02x at ROM address 0x%04x not implemented.\n", opcode, pc);
-      return ERR_OP_INVALID_OR_NOT_IMPLEMENTED;
-
+  printf("%d\n", 0xc3);
+  if ((CB_MASK & op) == CB_MASK) {
+    op = read_8(gb_emu_p, pc+1);
+    op_struct = cb_op_array[op];
+  } else {
+    op_struct = op_array[op];
   }
-  // Update the global clock based on how many cycles we just used
-  z80_p->clk.cpu_cycles += z80_p->clk.prev_cpu_cycles;
-  z80_p->clk.m_cycles += z80_p->clk.prev_m_cycles;
-  return opcode;
+
+  *op_p = op_struct;
+
+  // Certain ops conditionally take a variable number of cycles
+  // or change the PC in ways not related to opcode length. We set default
+  // values to update the CPU fields with here, and change them within the
+  // switch case if necessary.
+  cycles = op_struct.cyc1;
+  new_pc = pc + op_struct.len;
+
+  switch (op_struct.op_type) {
+  case (OP_NOP):
+    break;
+  case (OP_LD_DD_16IM):
+    b16_im = read_16(gb_emu_p, pc+1);
+    if ((err = op_ld_dd_16im(gb_emu_p, get_dd_code(op), b16_im)) < 0)
+      return err;
+    break;
+  default:
+
+    return ERR_OP_INVALID_OR_NOT_IMPLEMENTED;
+  }
+
+  set_PC(z80_p, new_pc);
+  z80_p->clk.prev_cpu_cycles = cycles;
+  z80_p->clk.prev_m_cycles = cycles/4;
+  z80_p->clk.cpu_cycles += cycles;
+  z80_p->clk.m_cycles += cycles/4;
+  return 0;
+
 }
+
 
 int addr_to_op_str(emu *gb_emu_p, uint16_t addr, char *buf, int buf_len) {
   uint8_t opcode = read_8(gb_emu_p, addr);

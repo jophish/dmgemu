@@ -12,6 +12,7 @@ enum error {
   ERR_DUPLICATE_BP = -7,
   ERR_INVALID_BP = -8,
   ERR_BUF_LEN = -9,
+  ERR_INVALID_DD_PAIR = -10,
 };
 
 #endif /* ERR_H */

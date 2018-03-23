@@ -50,7 +50,6 @@ int debug_prompt(emu *gb_emu_p) {
     } else {
       dbg_str = strtok(line, TOK_DELIM);
     }
-
     char *endptr;
     uint16_t addr;
     int mem_val;
