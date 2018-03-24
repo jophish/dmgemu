@@ -3,10 +3,14 @@
 
 #include <stdint.h>
 
-#define DD_MASK 0b110000
+#define DD_MASK 0b00110000
+#define REG_MASK 0b00000111
 
 // Given an opcode, returns a dd code (bits 4 and 5)
 uint8_t get_dd_code(uint8_t op);
+
+// Given an opcode, returns a reg code (bits 0-2)
+uint8_t get_reg_code(uint8_t op);
 
 // Gets the two's complement interpretation of a byte
 int byte_to_2c(uint8_t val);

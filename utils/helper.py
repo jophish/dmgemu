@@ -7,7 +7,7 @@ def fixStr(string):
     if "(" in string and ")" in string:
         string = string[:string.index("(")] + "IND_" + string[string.index("(")+1:string.index(")")] + string[string.index(")")+1:]
     return string.replace("+", "I").replace("-", "D")
-    
+
 for op in data['unprefixed'].keys():
     cycles = data['unprefixed'][op]['cycles']
     out = "{" + op + ", " + str(cycles[0]) + ", "

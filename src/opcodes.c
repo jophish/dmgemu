@@ -18,12 +18,40 @@ int dd_to_reg_pair(cpu *z80_p, int dd_code, reg_pair *reg_pair_p){
     break;
   case (DD_PAIR_CODE_SP):
     ;
-    // this is... a hack
-    *reg_pair_p = (reg_pair) {(uint8_t *)&(z80_p->regs.sp), (uint8_t *)((void *)&(z80_p->regs.sp)+1)};
+    *reg_pair_p = (reg_pair) {&(z80_p->regs.sp_hi), &(z80_p->regs.sp_lo)};
     break;
   default:
     return ERR_INVALID_DD_PAIR;
   }
+  return 0;
+}
+
+int reg_code_to_pointer(cpu *z80_p, int reg_code, uint8_t **reg_p) {
+  switch (reg_code) {
+  case (REG_CODE_A):
+    *reg_p = &(z80_p->regs.a);
+    break;
+  case (REG_CODE_B):
+    *reg_p = &(z80_p->regs.b);
+    break;
+  case (REG_CODE_C):
+    *reg_p = &(z80_p->regs.c);
+    break;
+  case (REG_CODE_D):
+    *reg_p = &(z80_p->regs.d);
+    break;
+  case (REG_CODE_E):
+    *reg_p = &(z80_p->regs.e);
+    break;
+  case (REG_CODE_H):
+    *reg_p = &(z80_p->regs.h);
+    break;
+  case (REG_CODE_L):
+    *reg_p = &(z80_p->regs.l);
+    break;
+  default:
+    return ERR_INVALID_REG_CODE;
+  };
   return 0;
 }
 
@@ -38,6 +66,21 @@ int op_ld_dd_16im(emu *gb_emu_p, int dd_code, uint16_t val) {
   return 0;
 }
 
+int op_xor_a_r(emu *gb_emu_p, int reg_code) {
+  cpu *z80_p = &(gb_emu_p->z80);
+  uint8_t *reg_p;
+  int err;
+  if ((err = reg_code_to_pointer(z80_p, reg_code, &reg_p)) < 0)
+    return err;
+  z80_p->regs.a = z80_p->regs.a ^ *reg_p;
+  reset_flag_C(z80_p);
+  reset_flag_H(z80_p);
+  reset_flag_N(z80_p);
+  (z80_p->regs.a == 0) ? set_flag_Z(z80_p) : reset_flag_Z(z80_p);
+  return 0;
+}
+
+
 int dispatch_op(emu *gb_emu_p, opcode *op_p) {
   cpu *z80_p = &(gb_emu_p->z80);
   uint16_t pc = get_PC(z80_p);
@@ -46,7 +89,6 @@ int dispatch_op(emu *gb_emu_p, opcode *op_p) {
   uint16_t new_pc, b16_im;
   opcode op_struct;
   int err;
-  printf("%d\n", 0xc3);
   if ((CB_MASK & op) == CB_MASK) {
     op = read_8(gb_emu_p, pc+1);
     op_struct = cb_op_array[op];
@@ -71,8 +113,14 @@ int dispatch_op(emu *gb_emu_p, opcode *op_p) {
     if ((err = op_ld_dd_16im(gb_emu_p, get_dd_code(op), b16_im)) < 0)
       return err;
     break;
+  case (OP_JP_16IM):
+    new_pc = read_16(gb_emu_p, pc+1);
+    break;
+  case (OP_XOR_REG):
+    if ((err = op_xor_a_r(gb_emu_p, get_reg_code(op))) < 0)
+      return err;
+    break;
   default:
-
     return ERR_OP_INVALID_OR_NOT_IMPLEMENTED;
   }
 
@@ -85,194 +133,79 @@ int dispatch_op(emu *gb_emu_p, opcode *op_p) {
 
 }
 
-
-int addr_to_op_str(emu *gb_emu_p, uint16_t addr, char *buf, int buf_len) {
-  uint8_t opcode = read_8(gb_emu_p, addr);
-  int err = 0;
-  switch (opcode) {
-    case (OP_NOP) :
-      err = sprintf(buf, "nop");
-      break;
-    case (OP_B16_JP_IV) :
-      err = sprintf(buf, "jp 0x%04x", read_16(gb_emu_p, addr+1));
-      break;
-    case (OP_XOR_A) :
-      err = sprintf(buf, "xor a");
-      break;
-    case (OP_OR_A) :
-      err = sprintf(buf, "or a");
-      break;
-    case (OP_OR_B) :
-      err = sprintf(buf, "or b");
-      break;
-    case (OP_OR_C) :
-      err = sprintf(buf, "or c");
-      break;
-    case (OP_OR_D) :
-      err = sprintf(buf, "or d");
-      break;
-    case (OP_OR_E) :
-      err = sprintf(buf, "or e");
-      break;
-    case (OP_OR_H) :
-      err = sprintf(buf, "or h");
-      break;
-    case (OP_OR_L) :
-      err = sprintf(buf, "or l");
-      break;
-    case (OP_B16_LD_IV_HL) :
-      err = sprintf(buf, "ld hl, 0x%04x", read_16(gb_emu_p, addr+1));
-      break;
-    case (OP_B16_LD_IV_SP) :
-      err = sprintf(buf, "ld sp, 0x%04x", read_16(gb_emu_p, addr+1));
-      break;
-    case (OP_B16_LD_IV_BC) :
-      err = sprintf(buf, "ld bc, 0x%04x", read_16(gb_emu_p, addr+1));
-      break;
-    case (OP_B16_LD_IV_NN_A) :
-      err = sprintf(buf, "ld (0x%04x), a", read_16(gb_emu_p, addr+1));
-      break;
-    case (OP_B8_LD_IV_A) :
-      err = sprintf(buf, "ld a, 0x%02x", read_8(gb_emu_p, addr+1));
-      break;
-    case (OP_B8_LD_IV_B) :
-      err = sprintf(buf, "ld b, 0x%02x", read_8(gb_emu_p, addr+1));
-      break;
-    case (OP_B8_LD_IV_C) :
-      err = sprintf(buf, "ld c, 0x%02x", read_8(gb_emu_p, addr+1));
-      break;
-    case (OP_B8_LD_IV_D) :
-      err = sprintf(buf, "ld d, 0x%02x", read_8(gb_emu_p, addr+1));
-      break;
-    case (OP_B8_LD_IV_E) :
-      err = sprintf(buf, "ld e, 0x%02x", read_8(gb_emu_p, addr+1));
-      break;
-    case (OP_B8_LD_IV_H) :
-      err = sprintf(buf, "ld h, 0x%02x", read_8(gb_emu_p, addr+1));
-      break;
-    case (OP_B8_LD_IV_L) :
-      err = sprintf(buf, "ld l, 0x%02x", read_8(gb_emu_p, addr+1));
-      break;
-    case (OP_B8_LD_IV_IND_HL) :
-      err = sprintf(buf, "ld (hl), 0x%02x", read_8(gb_emu_p, addr+1));
-      break;
-    case (OP_LDD_HL_A) :
-      err = sprintf(buf, "ldd (hl), a");
-      break;
-    case (OP_LDI_A_HL) :
-      err = sprintf(buf, "ldi a, (hl)");
-      break;
-    case (OP_LD_A_A) :
-      err = sprintf(buf, "ld a, a");
-      break;
-    case (OP_LD_A_B) :
-      err = sprintf(buf, "ld a, b");
-      break;
-    case (OP_LD_A_C) :
-      err = sprintf(buf, "ld a, c");
-      break;
-    case (OP_LD_A_D) :
-      err = sprintf(buf, "ld a, d");
-      break;
-    case (OP_LD_A_E) :
-      err = sprintf(buf, "ld a, e");
-      break;
-    case (OP_LD_A_H) :
-      err = sprintf(buf, "ld a, h");
-      break;
-    case (OP_LD_A_L) :
-      err = sprintf(buf, "ld a, l");
-      break;
-    case (OP_DEC_A) :
-      err = sprintf(buf, "dec a");
-      break;
-    case (OP_DEC_B) :
-      err = sprintf(buf, "dec b");
-      break;
-    case (OP_DEC_C) :
-      err = sprintf(buf, "dec c");
-      break;
-    case (OP_DEC_D) :
-      err = sprintf(buf, "dec d");
-      break;
-    case (OP_DEC_E) :
-      err = sprintf(buf, "dec e");
-      break;
-    case (OP_DEC_H) :
-      err = sprintf(buf, "dec h");
-      break;
-    case (OP_DEC_L) :
-      err = sprintf(buf, "dec l");
-      break;
-    case (OP_DEC_IND_HL) :
-      err = sprintf(buf, "dec (hl)");
-      break;
-    case (OP_DEC_BC) :
-      err = sprintf(buf, "dec bc");
-      break;
-    case (OP_DEC_DE) :
-      err = sprintf(buf, "dec de");
-      break;
-    case (OP_DEC_HL) :
-      err = sprintf(buf, "dec hl");
-      break;
-    case (OP_DEC_SP) :
-      err = sprintf(buf, "dec sp");
-      break;
-    case (OP_INC_A) :
-      err = sprintf(buf, "inc a");
-      break;
-    case (OP_INC_B) :
-      err = sprintf(buf, "inc b");
-      break;
-    case (OP_INC_C) :
-      err = sprintf(buf, "inc c");
-      break;
-    case (OP_INC_D) :
-      err = sprintf(buf, "inc d");
-      break;
-    case (OP_INC_E) :
-      err = sprintf(buf, "inc e");
-      break;
-    case (OP_INC_H) :
-      err = sprintf(buf, "inc h");
-      break;
-    case (OP_INC_L) :
-      err = sprintf(buf, "inc l");
-      break;
-    case (OP_INC_IND_HL) :
-      err = sprintf(buf, "inc (hl)");
-      break;
-    case (OP_B8_JR_NZ) :
-      ;
-      int rel_offset = byte_to_2c(read_8(gb_emu_p, addr+1)) + 2;
-      err = sprintf(buf, "jr nz, 0x%04x", addr + rel_offset);
-      break;
-    case (OP_DI) :
-      err = sprintf(buf, "di");
-      break;
-    case (OP_RET) :
-      err = sprintf(buf, "ret");
-      break;
-    case (OP_B16_CALL_IV) :
-      err = sprintf(buf, "call 0x%04x", read_16(gb_emu_p, addr+1));
-      break;
-    case (OP_LDH_N_A) :
-      err = sprintf(buf, "ldh (0x%04x), a", HW_IO_REGS_START + read_8(gb_emu_p, addr+1));
-      break;
-    case (OP_LDH_A_N) :
-      err = sprintf(buf, "ldh a, (0x%04x)", HW_IO_REGS_START + read_8(gb_emu_p, addr+1));
-      break;
-    case (OP_LDH_C_A) :
-      err = sprintf(buf, "ldh (c), a");
-      break;
-    case (OP_B8_CP_IV_A) :
-      err = sprintf(buf, "cp (0x%02x)", read_8(gb_emu_p, addr+1));
-      break;
-    default :
-      return ERR_OP_INVALID_OR_NOT_IMPLEMENTED;
+bool special_arg(uint8_t arg) {
+  switch (arg){
+  case (ARG_D16):
+  case (ARG_D8):
+  case (ARG_IND_A16):
+  case (ARG_IND_A8):
+  case (ARG_R8):
+  case (ARG_A8):
+  case (ARG_A16):
+  case (ARG_SPIR8):
+    return true;
+  default:
+    return false;
   }
-  if (err < 0) {
+}
+int addr_to_op_str(emu *gb_emu_p, uint16_t addr, char *buf, int buf_len) {
+  cpu *z80_p = &(gb_emu_p->z80);
+  uint16_t pc = get_PC(z80_p);
+  uint8_t op = read_8(gb_emu_p, addr);
+  int switch_arg = -1;
+  opcode op_struct;
+  int err;
+
+
+  if ((CB_MASK & op) == CB_MASK) {
+    op = read_8(gb_emu_p, pc+1);
+    op_struct = cb_op_array[op];
+  } else {
+    op_struct = op_array[op];
+  }
+
+  if (special_arg(op_struct.arg1)) {
+      switch_arg = op_struct.arg1;
+    } else if (special_arg(op_struct.arg2)) {
+      switch_arg = op_struct.arg2;
+    }
+
+  if (switch_arg > 0) {
+    uint8_t im8 = read_8(gb_emu_p, addr+1);
+    uint16_t im16 = read_16(gb_emu_p, addr+1);
+    uint16_t format;
+
+    switch (switch_arg) {
+    case (ARG_D16):
+    case (ARG_A16):
+    case (ARG_IND_A16):
+      format = im16;
+      break;
+    case (ARG_D8):
+    case (ARG_IND_A8):
+      format = (uint16_t)im8;
+      break;
+    case (ARG_R8):
+      format = pc + byte_to_2c(im8);
+      break;
+    case (ARG_A8):
+      format = HW_IO_REGS_START + im8;
+      break;
+    case (ARG_SPIR8):
+      format = get_SP(z80_p) + byte_to_2c(im8);
+      break;
+    default:
+	printf("Error while formatting debug string.\n");
+	exit(0);
+    }
+
+    if ((err = snprintf(buf, buf_len, op_struct.mnemonic, format)) < 0)
+      return ERR_BUF_LEN;
+
+    return 0;
+  }
+
+  if ((err = snprintf(buf, buf_len, op_struct.mnemonic)) < 0) {
     return ERR_BUF_LEN;
   }
   return 0;

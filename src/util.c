@@ -26,3 +26,7 @@ int get_user_input(char *buf, int size) {
 uint8_t get_dd_code(uint8_t op) {
   return (op & DD_MASK) >> 4;
 }
+
+uint8_t get_reg_code(uint8_t op) {
+  return (op & REG_MASK);
+}
