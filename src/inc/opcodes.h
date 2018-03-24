@@ -13,8 +13,6 @@
 #define LSB_MASK 0x00FF
 #define MAX_MNEMONIC_LEN 0x10
 
-
-
 enum reg_code {
   REG_CODE_A = 0b111,
   REG_CODE_B = 0b000,
@@ -92,7 +90,6 @@ enum op_type {
   OP_TMP,
 };
 
-
 typedef struct opcode {
   uint8_t op, cyc1, cyc2, len;      // opcode, normal cycles, conditional cycles, len
   bool extended;                    // 0xCB prefix?
@@ -140,10 +137,8 @@ int op_pop_qq(emu *gb_emu_p, int qq_code);
 int op_ldhl_8im(emu *gb_emu_p, uint8_t val);
 int op_ld_ind_16im_sp(emu *gb_emu_p, uint16_t addr);
 
-// 8 Bit Arithmetic and Logical Operations
+// 8 Bit Arithmetic and Logical  Operations
 int op_xor_a_r1(emu *gb_emu_p, int reg_code);
-
-
 
 
 // Given an argument, determines whether or not the mnemonic requires
@@ -164,23 +159,17 @@ int reg_code_to_pointer(cpu *z80_p, int reg_code, uint8_t **reg_p);
 // MSB of the return value will be 0xCB, otherwise, 0.
 int dispatch_op(emu *gb_emu_p, opcode *op_p);
 
-// Given an opcode, returns the number of bytes it takes up,
-// including any immediate values. The op argument is 2 bytes
-// in order to account for 2-byte long opcodes, using the CB
-// prefix.
-int op_length(uint16_t op);
-
-// Given an emu and a pc, gets the opcode at the specified pc. If
-// the opcode is an 0xCB prefixed op, then the MSB of the return value
-// will be 0xCB, otherwise, it will be 0.
-uint16_t get_op(emu *gb_emu_p, uint16_t pc);
-
 // Given a memory address, interprets it as an instruction and
 // fills the buf with the string mnemonic of the opcode including
 // any immediate data that might follow the code. Returns ERR_OP_INVALID_OR_NOT_IMPLEMENTED
 // if the memory at addr does not correspond to a known instruction. Returns ERR_BUF_LEN
-// if the given buffer is too small for the given string
-int addr_to_op_str(emu *gb_emu_p, uint16_t addr, char *buf, int buf_len);
+// if the given buffer is too small for the given string. If op_struct_p is given,
+// the struct for the specified opcode will be returned in it.
+int addr_to_op_str(emu *gb_emu_p, uint16_t addr, char *buf, int buf_len, opcode *op_struct_p);
+
+// Given an address, fills in the given op_struct_p according to which op
+// is located at the address
+int addr_to_op(emu *gb_emu_p, uint16_t addr, opcode *op_struct_p);
 
 // Given bytes a and b to add together, checks if a half-carry will occur
 bool check_hc_add(uint8_t a, uint8_t b);
@@ -188,115 +177,6 @@ bool check_hc_add(uint8_t a, uint8_t b);
 // Masks
 #define BYTE_MASK 0xFF
 #define NIBBLE_MASK 0xF
-
-// Extended prefix
-#define PREFIX_CB 0xCB
-
-
-// Opcode definitions
-
-// 8-Bit Immediate Loads
-#define OP_B8_LD_IV_A 0x3E
-#define OP_B8_LD_IV_B 0x06
-#define OP_B8_LD_IV_C 0x0E
-#define OP_B8_LD_IV_D 0x16
-#define OP_B8_LD_IV_E 0x1E
-#define OP_B8_LD_IV_H 0x26
-#define OP_B8_LD_IV_L 0x2E
-#define OP_B8_LD_IV_IND_HL 0x36
-
-
-// LD A, n
-#define OP_LD_A_A 0x7F
-#define OP_LD_A_B 0x78
-#define OP_LD_A_C 0x79
-#define OP_LD_A_D 0x7A
-#define OP_LD_A_E 0x7B
-#define OP_LD_A_H 0x7C
-#define OP_LD_A_L 0x7D
-#define OP_LD_A_IND_BC 0x0A
-#define OP_LD_A_IND_DE 0x1A
-#define OP_LD_A_IND_HL 0x7E
-#define OP_LD_A_IND_NN 0xFA
-
-// LDH n, A
-#define OP_LDH_N_A 0xE0
-
-// LDH, A, n
-#define OP_LDH_A_N 0xF0
-
-// LDH (C), A
-#define OP_LDH_C_A 0xE2
-
-// 16-Bit Immediate Loads
-#define OP_B16_LD_IV_BC 0x01
-#define OP_B16_LD_IV_DE 0x11
-#define OP_B16_LD_IV_HL 0x21
-#define OP_B16_LD_IV_SP 0x31
-#define OP_B16_LD_IV_NN_A 0xEA
-
-// CP
-#define OP_B8_CP_IV_A 0xFE
-
-// NOP
-//#define OP_NOP        0x00
-
-// Jump to 16-bit Immediate address
-#define OP_B16_JP_IV 0xC3
-
-// Relative jumps
-#define OP_B8_JR_NZ 0x20
-
-// XOR
-#define OP_XOR_A 0xAF
-#define OP_XOR_B 0xA8
-
-// OR
-#define OP_OR_A 0xB7
-#define OP_OR_B 0xB0
-#define OP_OR_C 0xB1
-#define OP_OR_D 0xB2
-#define OP_OR_E 0xB3
-#define OP_OR_H 0xB4
-#define OP_OR_L 0xB5
-#define OP_OR_IND_HL 0xB6
-#define OP_B8_OR_IV 0xF6
-
-// LDD
-#define OP_LDD_HL_A 0x32
-
-// LDI
-#define OP_LDI_A_HL 0x2A
-
-// DEC
-#define OP_DEC_A 0x3D
-#define OP_DEC_B 0x05
-#define OP_DEC_C 0x0D
-#define OP_DEC_D 0x15
-#define OP_DEC_E 0x1D
-#define OP_DEC_H 0x25
-#define OP_DEC_L 0x2D
-#define OP_DEC_IND_HL 0x35
-
-#define OP_DEC_BC 0x0B
-#define OP_DEC_DE 0x1B
-#define OP_DEC_HL 0x2B
-#define OP_DEC_SP 0x3B
-
-// INC
-#define OP_INC_A 0x3C
-#define OP_INC_B 0x04
-#define OP_INC_C 0x0C
-#define OP_INC_D 0x14
-#define OP_INC_E 0x1C
-#define OP_INC_H 0x24
-#define OP_INC_L 0x2C
-#define OP_INC_IND_HL 0x34
-
-// Control
-#define OP_DI 0xF3
-#define OP_B16_CALL_IV 0xCD
-#define OP_RET 0xC9
 
 static const opcode op_array[256] = {
 {0x0, 4, 0, 1,  false, ARG_NONE, ARG_NONE, "nop", OP_NOP},

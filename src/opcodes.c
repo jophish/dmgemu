@@ -80,7 +80,6 @@ int op_xor_a_r(emu *gb_emu_p, int reg_code) {
   return 0;
 }
 
-
 int dispatch_op(emu *gb_emu_p, opcode *op_p) {
   cpu *z80_p = &(gb_emu_p->z80);
   uint16_t pc = get_PC(z80_p);
@@ -89,12 +88,8 @@ int dispatch_op(emu *gb_emu_p, opcode *op_p) {
   uint16_t new_pc, b16_im;
   opcode op_struct;
   int err;
-  if ((CB_MASK & op) == CB_MASK) {
-    op = read_8(gb_emu_p, pc+1);
-    op_struct = cb_op_array[op];
-  } else {
-    op_struct = op_array[op];
-  }
+
+  addr_to_op(gb_emu_p, pc, &op_struct);
 
   *op_p = op_struct;
 
@@ -148,21 +143,27 @@ bool special_arg(uint8_t arg) {
     return false;
   }
 }
-int addr_to_op_str(emu *gb_emu_p, uint16_t addr, char *buf, int buf_len) {
+
+int addr_to_op(emu *gb_emu_p, uint16_t addr, opcode *op_struct_p) {
+  uint8_t op = read_8(gb_emu_p, addr);
+  if ((CB_MASK & op) == CB_MASK) {
+    op = read_8(gb_emu_p, addr+1);
+    *op_struct_p = cb_op_array[op];
+  } else {
+    *op_struct_p = op_array[op];
+  }
+  return 0;
+}
+
+int addr_to_op_str(emu *gb_emu_p, uint16_t addr, char *buf, int buf_len, opcode *op_struct_p) {
   cpu *z80_p = &(gb_emu_p->z80);
   uint16_t pc = get_PC(z80_p);
-  uint8_t op = read_8(gb_emu_p, addr);
   int switch_arg = -1;
   opcode op_struct;
   int err;
 
-
-  if ((CB_MASK & op) == CB_MASK) {
-    op = read_8(gb_emu_p, pc+1);
-    op_struct = cb_op_array[op];
-  } else {
-    op_struct = op_array[op];
-  }
+  addr_to_op(gb_emu_p, addr, &op_struct);
+  *op_struct_p =  op_struct;
 
   if (special_arg(op_struct.arg1)) {
       switch_arg = op_struct.arg1;
@@ -209,41 +210,6 @@ int addr_to_op_str(emu *gb_emu_p, uint16_t addr, char *buf, int buf_len) {
     return ERR_BUF_LEN;
   }
   return 0;
-}
-
-int op_length(uint16_t op) {
-  if ((op & BYTE_MASK) == PREFIX_CB) {
-    return 2;
-  }
-
-  switch (op) {
-    // 2 bytes
-    case (OP_B8_LD_IV_A) :
-    case (OP_B8_LD_IV_B) :
-    case (OP_B8_LD_IV_C) :
-    case (OP_B8_LD_IV_D) :
-    case (OP_B8_LD_IV_E) :
-    case (OP_B8_LD_IV_H) :
-    case (OP_B8_LD_IV_L) :
-    case (OP_B8_LD_IV_IND_HL) :
-    case (OP_LDH_N_A) :
-    case (OP_LDH_A_N) :
-    case (OP_B8_JR_NZ) :
-    case (OP_B8_CP_IV_A) :
-      return 2;
-    // 3 bytes
-    case (OP_B16_LD_IV_BC) :
-    case (OP_B16_LD_IV_DE) :
-    case (OP_B16_LD_IV_HL) :
-    case (OP_B16_LD_IV_SP) :
-    case (OP_B16_LD_IV_NN_A) :
-    case (OP_B16_JP_IV) :
-    case (OP_B16_CALL_IV) :
-      return 3;
-    default :
-      // catches all 0x4x - 0xBx
-      return 1;
-  }
 }
 
 bool check_hc_add(uint8_t a, uint8_t b) {
