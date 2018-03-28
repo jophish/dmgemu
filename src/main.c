@@ -8,7 +8,7 @@
 #include "debug.h"
 #include "error.h"
 #include "gpu.h"
-#include "test.h"
+
 
 
 int main(int argc, char **argv) {
@@ -30,7 +30,6 @@ int main(int argc, char **argv) {
 
   opcode op_store;
   int op;
-  testGLFW();
   while (true) {
     //printf("Now executing instruction at address 0x%04x\n", get_PC(z80_p));
     #ifdef DEBUG
