@@ -456,7 +456,6 @@ void show_breakpoints(debugger *dbg_p) {
   }
 }
 
-
 int remove_breakpoint(debugger *dbg_p, uint16_t addr) {
   for (int i = 0; i < MAX_BREAKPOINTS; i++) {
     if (dbg_p->breakpoints[i] == addr) {
@@ -500,11 +499,11 @@ void show_inst_at_addr(emu *gb_emu_p, uint16_t addr, opcode *op_struct_p) {
     space[i] = ' ';
   }
   space[space_len-1] = '\0';
-  printf("%s[0x%04x] %s%s(%02x", ERR_SPACE, addr, buf, space, op_struct.op);
-  for (int i = 1; i < op_struct.len; i++) {
+  printf("%s[0x%04x] %s%s(", ERR_SPACE, addr, buf, space);
+  for (int i = 0; i < op_struct.len; i++) {
     printf(" %02x", read_8(gb_emu_p, addr+i));
   }
-  printf(")\n");
+  printf(" )\n");
   if (op_struct_p != NULL) {
     *op_struct_p = op_struct;
   }

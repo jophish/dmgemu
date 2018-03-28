@@ -27,6 +27,26 @@ uint8_t get_dd_code(uint8_t op) {
   return (op & DD_MASK) >> 4;
 }
 
-uint8_t get_reg_code(uint8_t op) {
+uint8_t get_qq_code(uint8_t op) {
+  return (op & QQ_MASK) >> 4;
+}
+
+uint8_t get_ss_code(uint8_t op) {
+  return (op & SS_MASK) >> 4;
+}
+
+uint8_t get_reg_code_lo(uint8_t op) {
   return (op & REG_MASK);
+}
+
+uint8_t get_reg_code_hi(uint8_t op) {
+  return ((op >> 3) & REG_MASK);
+}
+
+uint8_t get_bit_offset(uint8_t op) {
+    return ((op >> 3) & REG_MASK);
+}
+
+uint8_t get_t_code(uint8_t op) {
+  return ((op >> 3) & REG_MASK);
 }

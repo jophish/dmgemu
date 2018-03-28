@@ -8,6 +8,8 @@
 #include "debug.h"
 #include "error.h"
 #include "gpu.h"
+#include "test.h"
+
 
 int main(int argc, char **argv) {
   if (argc == 1) {
@@ -28,6 +30,7 @@ int main(int argc, char **argv) {
 
   opcode op_store;
   int op;
+  testGLFW();
   while (true) {
     //printf("Now executing instruction at address 0x%04x\n", get_PC(z80_p));
     #ifdef DEBUG
@@ -38,14 +41,15 @@ int main(int argc, char **argv) {
 
     op = dispatch_op(gb_emu_p, &op_store);
     if (op == ERR_OP_INVALID_OR_NOT_IMPLEMENTED) {
-      printf("Unimplemented op: 0x%02x\n", op_store.op);
+      printf("Unimplemented op:\n");
+      show_inst_at_addr(gb_emu_p, get_PC(z80_p), NULL);
       exit(0);
     }
     if (op == ERR_INVALID_ADDRESS) {
       printf("Invalid address in op\n");
       exit(0);
     }
-    //step_gpu(gb_emu_p);
+    step_gpu(gb_emu_p);
     //printf("Successfully dispatched op: %02x\n", op);
   }
 }

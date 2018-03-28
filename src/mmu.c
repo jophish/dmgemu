@@ -63,7 +63,8 @@ int read_8(emu *gb_emu_p, mem_addr addr) {
       return gb_emu_p->gb_rom.data[addr];
       break;
     case (REGION_CHAR_RAM) :
-      break;
+      buf_offset = addr - CHAR_RAM_START;
+      return gb_emu_p->gb_mmu.char_ram[buf_offset];
     case (REGION_BG_MAP_DATA_1) :
       buf_offset = addr - BG_MAP_DATA_1_START;
       return gb_emu_p->gb_mmu.bg_map_data_1[buf_offset];
@@ -127,6 +128,9 @@ int write_8(emu *gb_emu_p, mem_addr addr, uint8_t val) {
       // Illegal write here  Can't write to ROM
       break;
     case (REGION_CHAR_RAM) :
+      ;
+      buf_offset = addr - CHAR_RAM_START;
+      gb_emu_p->gb_mmu.char_ram[buf_offset] = val;
       break;
     case (REGION_BG_MAP_DATA_1) :
       ;
@@ -204,4 +208,7 @@ void init_mmu(mmu *mmu_p) {
   uint8_t *bg_data_2_buf = malloc(SZ_BG_MAP_DATA_2);
   mmu_p->bg_map_data_2 = bg_data_2_buf;
   memset(bg_data_2_buf, 0, SZ_BG_MAP_DATA_2);
+  uint8_t *char_ram_buf = malloc(SZ_CHAR_RAM);
+  mmu_p->char_ram = char_ram_buf;
+  memset(char_ram_buf, 0, SZ_CHAR_RAM);
 }

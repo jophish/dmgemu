@@ -47,6 +47,7 @@ typedef struct mmu {
   uint8_t *zero_page;
   uint8_t *bg_map_data_1;
   uint8_t *bg_map_data_2;
+  uint8_t *char_ram;
 } mmu;
 
 // Initializes buffers in the MMU
@@ -116,6 +117,7 @@ enum io_region {
 #define SZ_ZERO_PAGE 0x7F
 #define SZ_BG_MAP_DATA_1 0x400
 #define SZ_BG_MAP_DATA_2 0x400
+#define SZ_CHAR_RAM 0x1800
 
 // Masks
 #define MASK_IE_FLAG 0xF

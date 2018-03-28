@@ -70,7 +70,7 @@ int write_gpu_reg(gpu *gb_gpu_p, uint16_t addr, uint8_t val) {
   switch (addr) {
     case (REG_LCDC) :
       // Bits 0-2 are read only
-      gb_gpu_p->gb_gpu_regs.reg_lcdc = val & ~MASK_STAT_WRITE;
+      gb_gpu_p->gb_gpu_regs.reg_lcdc = val;
       break;
     case (REG_STAT) :
       // Bit 7 is always 0. Bits 6-2 are R/W, and bits 1-0 are read only

@@ -14,6 +14,9 @@ enum error {
   ERR_BUF_LEN = -9,
   ERR_INVALID_DD_PAIR = -10,
   ERR_INVALID_REG_CODE = -11,
+  ERR_INVALID_SS_PAIR = -12,
+  ERR_INVALID_T_CODE = -13,
+  ERR_INVALID_QQ_PAIR = -14,
 };
 
 #endif /* ERR_H */
