@@ -8,8 +8,8 @@
 #include "debug.h"
 #include "error.h"
 #include "gpu.h"
-
-
+#include "window.h"
+#include <GLFW/glfw3.h>
 
 int main(int argc, char **argv) {
   if (argc == 1) {
@@ -21,7 +21,6 @@ int main(int argc, char **argv) {
 
   cpu *z80_p = &(gb_emu.z80);
   rom *gb_rom_p = &(gb_emu.gb_rom);
-
   init_emu(gb_emu_p);
 
   load_rom(gb_rom_p, argv[1]);
@@ -30,6 +29,7 @@ int main(int argc, char **argv) {
 
   opcode op_store;
   int op;
+  //GLFWwindow *window = init_window();
   while (true) {
     //printf("Now executing instruction at address 0x%04x\n", get_PC(z80_p));
     #ifdef DEBUG
@@ -49,6 +49,7 @@ int main(int argc, char **argv) {
       exit(0);
     }
     step_gpu(gb_emu_p);
+    //render(gb_emu_p, window);
     //printf("Successfully dispatched op: %02x\n", op);
   }
 }

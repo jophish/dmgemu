@@ -17,6 +17,7 @@ enum error {
   ERR_INVALID_SS_PAIR = -12,
   ERR_INVALID_T_CODE = -13,
   ERR_INVALID_QQ_PAIR = -14,
+  ERR_INVALID_PX = -15,
 };
 
 #endif /* ERR_H */
