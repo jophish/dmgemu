@@ -11,7 +11,8 @@ int step_gpu(emu *gb_emu_p) {
   cpu *z80_p = &(gb_emu_p->z80);
 
   gb_gpu_p->gpu_clock += z80_p->clk.prev_cpu_cycles;
-  switch (gb_gpu_p->mode) {
+  switch (gb_gpu_p->mode
+) {
     // H-Blank period
     case (0) :
       if (gb_gpu_p->gpu_clock >= 204) {
@@ -54,7 +55,7 @@ int step_gpu(emu *gb_emu_p) {
 	gb_gpu_p->gpu_clock = 0;
 	gb_gpu_p->mode = 0;
 	// We should eventually write a scanline to the framebuffer here
-	//update_buffer(gb_emu_p);
+	update_buffer(gb_emu_p);
       }
       break;
   }
@@ -191,7 +192,8 @@ int write_gpu_reg(gpu *gb_gpu_p, uint16_t addr, uint8_t val) {
       // Register not writeable
       break;
     case (REG_LYC) :
-      return ERR_INVALID_ADDRESS;
+      gb_gpu_p->gb_gpu_regs.reg_lyc = val;
+      break;
     case (REG_DMA) :
       return ERR_INVALID_ADDRESS;
     case (REG_BGP) :

@@ -572,6 +572,20 @@ int op_inc_r1(emu *gb_emu_p, int reg_code) {
   return 0;
 }
 
+int op_sub_a_r1( emu *gb_emu_p, int reg_code) {
+  cpu *z80_p = &(gb_emu_p->z80);
+  uint8_t *reg_p;
+  int err;
+  if ((err = reg_code_to_pointer(z80_p, reg_code, &reg_p)) < 0)
+    return err;
+  (z80_p->regs.a & 0x0f) < (*reg_p & 0x0f) ? set_flag_H(z80_p) : reset_flag_H(z80_p);
+  (z80_p->regs.a < *reg_p) ? set_flag_C(z80_p) : reset_flag_C(z80_p);
+  z80_p->regs.a = z80_p->regs.a - *reg_p;
+  (z80_p->regs.a == 0) ? set_flag_Z(z80_p) : reset_flag_Z(z80_p);
+  set_flag_N(z80_p);
+  return 0;
+}
+
 int dispatch_op(emu *gb_emu_p, opcode *op_p) {
   cpu *z80_p = &(gb_emu_p->z80);
   uint16_t pc = get_PC(z80_p);
@@ -822,6 +836,12 @@ int dispatch_op(emu *gb_emu_p, opcode *op_p) {
       cycles = op_struct.cyc2;
     }
     break;
+  case (OP_JP_NZ_16IM):
+    if (get_flag_Z(z80_p) == 0) {
+      new_pc = read_16(gb_emu_p, pc+1);
+      cycles = op_struct.cyc2;
+    }
+    break;
   case (OP_RET_Z):
     if (get_flag_Z(z80_p) == 1) {
       new_pc = read_16(gb_emu_p, get_SP(z80_p));
@@ -830,6 +850,10 @@ int dispatch_op(emu *gb_emu_p, opcode *op_p) {
     break;
   case (OP_JR_8IM):
     new_pc = pc + byte_to_2c(read_8(gb_emu_p, pc+1)) + 2;
+    break;
+  case (OP_SUB_REG):
+    if ((err = op_sub_a_r1(gb_emu_p, get_reg_code_lo(op))) < 0)
+      return err;
     break;
   default:
     return ERR_OP_INVALID_OR_NOT_IMPLEMENTED;

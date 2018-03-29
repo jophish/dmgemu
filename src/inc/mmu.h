@@ -129,6 +129,7 @@ enum io_region {
 
 // Register definitions
 #define REG_IF 0xFF0F
+#define REG_IE 0xFFFF
 
 // GPU regs
 #define REG_LCDC 0xFF40
