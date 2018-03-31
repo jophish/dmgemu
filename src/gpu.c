@@ -4,6 +4,7 @@
 #include "emu.h"
 #include "util.h"
 #include "error.h"
+#include "int.h"
 
 int step_gpu(emu *gb_emu_p) {
   gpu *gb_gpu_p = &(gb_emu_p->gb_gpu);
@@ -11,8 +12,7 @@ int step_gpu(emu *gb_emu_p) {
   cpu *z80_p = &(gb_emu_p->z80);
 
   gb_gpu_p->gpu_clock += z80_p->clk.prev_cpu_cycles;
-  switch (gb_gpu_p->mode
-) {
+  switch (gb_gpu_p->mode) {
     // H-Blank period
     case (0) :
       if (gb_gpu_p->gpu_clock >= 204) {
@@ -22,7 +22,7 @@ int step_gpu(emu *gb_emu_p) {
 	  gb_gpu_p->mode = 1;
 	  // set V-Blank interrupt request
 
-	  gb_mmu_p->hw_io_regs[REG_IF-HW_IO_REGS_START] |= 0x2;
+	  gb_mmu_p->hw_io_regs[REG_IF-HW_IO_REGS_START] |= INT_V_BLANK;
 	  // Render screen
 	} else {
 	  gb_gpu_p->mode = 2;
@@ -56,6 +56,7 @@ int step_gpu(emu *gb_emu_p) {
 	gb_gpu_p->mode = 0;
 	// We should eventually write a scanline to the framebuffer here
 	update_buffer(gb_emu_p);
+	return 1;
       }
       break;
   }
@@ -169,7 +170,6 @@ void init_gpu(gpu *gb_gpu_p) {
   gb_gpu_p->gpu_clock = 0;
   gb_gpu_p->line = 0;
   memset(&(gb_gpu_p->gb_gpu_regs), 0, sizeof(gpu_regs));
-  
 }
 
 int write_gpu_reg(gpu *gb_gpu_p, uint16_t addr, uint8_t val) {
@@ -195,7 +195,8 @@ int write_gpu_reg(gpu *gb_gpu_p, uint16_t addr, uint8_t val) {
       gb_gpu_p->gb_gpu_regs.reg_lyc = val;
       break;
     case (REG_DMA) :
-      return ERR_INVALID_ADDRESS;
+      gb_gpu_p->gb_gpu_regs.reg_dma = val;
+      break;
     case (REG_BGP) :
       gb_gpu_p->gb_gpu_regs.reg_bgp = val;
       break;
@@ -206,9 +207,11 @@ int write_gpu_reg(gpu *gb_gpu_p, uint16_t addr, uint8_t val) {
       gb_gpu_p->gb_gpu_regs.reg_obp1 = val;
       break;
     case (REG_WY) :
-      return ERR_INVALID_ADDRESS;
+      gb_gpu_p->gb_gpu_regs.reg_wy = val;
+      break;
     case (REG_WX) :
-      return ERR_INVALID_ADDRESS;
+      gb_gpu_p->gb_gpu_regs.reg_wx = val;
+      break;
     default :
       return ERR_INVALID_ADDRESS;
   }
@@ -234,7 +237,7 @@ int read_gpu_reg(gpu *gb_gpu_p, uint16_t addr) {
     case (REG_LYC) :
       return ERR_INVALID_ADDRESS;
     case (REG_DMA) :
-      return ERR_INVALID_ADDRESS;
+      return gb_gpu_p->gb_gpu_regs.reg_dma;
     case (REG_BGP) :
       return gb_gpu_p->gb_gpu_regs.reg_bgp;
     case (REG_OBP0) :
@@ -242,9 +245,9 @@ int read_gpu_reg(gpu *gb_gpu_p, uint16_t addr) {
     case (REG_OBP1) :
       return gb_gpu_p->gb_gpu_regs.reg_obp1;
     case (REG_WY) :
-      return ERR_INVALID_ADDRESS;
+      return gb_gpu_p->gb_gpu_regs.reg_wy;
     case (REG_WX) :
-      return ERR_INVALID_ADDRESS;
+      return gb_gpu_p->gb_gpu_regs.reg_wx;
     default :
       return ERR_INVALID_ADDRESS;
   }

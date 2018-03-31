@@ -9,6 +9,8 @@
 #include "error.h"
 #include "gpu.h"
 #include "window.h"
+#include "int.h"
+
 #include <GLFW/glfw3.h>
 
 int main(int argc, char **argv) {
@@ -29,7 +31,7 @@ int main(int argc, char **argv) {
 
   opcode op_store;
   int op;
-  //GLFWwindow *window = init_window();
+  GLFWwindow *window = init_window();
   while (true) {
     //printf("Now executing instruction at address 0x%04x\n", get_PC(z80_p));
     #ifdef DEBUG
@@ -45,11 +47,14 @@ int main(int argc, char **argv) {
       exit(0);
     }
     if (op == ERR_INVALID_ADDRESS) {
-      printf("Invalid address in op\n");
+      printf("Invalid address in op (pc: 0x%04x)\n", get_PC(z80_p));
+      printf("%s\n",op_store.mnemonic);
+      print_regs(z80_p, 0);
       exit(0);
     }
-    step_gpu(gb_emu_p);
-    //render(gb_emu_p, window);
-    //printf("Successfully dispatched op: %02x\n", op);
+    if (step_gpu(gb_emu_p) == 1)
+      render(gb_emu_p, window);
+    handle_interrupts(gb_emu_p);
+
   }
 }
