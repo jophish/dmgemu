@@ -17,27 +17,22 @@ void render(emu *gb_emu_p, GLFWwindow *window) {
     gb_gpu = gb_emu_p->gb_gpu;
   else
     return;
-  uint8_t *framebuf = gb_gpu.framebuffer;
-  uint8_t window_RGBData[WINDOW_WIDTH*WINDOW_HEIGHT*3];
-  /* for (uint16_t i = 0; i < LCD_HEIGHT; i++) { */
-  /*   for (uint16_t j = 0; j < LCD_WIDTH; j++) { */
-  /*     for (uint8_t k1 = 0; k1 < PX_SIZE; k1++) { */
-  /* 	for (uint8_t k2 = 0; k2 < PX_SIZE; k2++) { */
-  /* 	  window_RGBData[(k2*WINDOW_WIDTH*i) + (3*j*PX_SIZE + k1)] = framebuf[i*LCD_HEIGHT + j]*0x3F; */
-  /* 	  window_RGBData[(k2*WINDOW_WIDTH*i) + (3*j*PX_SIZE + k1+1)] = framebuf[i*LCD_HEIGHT + j]*0x3F; */
-  /* 	  window_RGBData[(k2*WINDOW_WIDTH*i) + (3*j*PX_SIZE + k1+2)] = framebuf[i*LCD_HEIGHT + j]*0x3F; */
-  /* 	} */
-  /*     } */
-  /*   } */
-  /* } */
-  for (uint16_t i = 0; i < LCD_HEIGHT*LCD_WIDTH; i++) {
-    window_RGBData[i*3] = framebuf[i]*0x3F;
-    window_RGBData[i*3+1] = framebuf[i]*0x3F;
-    window_RGBData[i*3+2] = framebuf[i]*0x3F;
-  }
-  glfwGetFramebufferSize(window, &width, &height);
-  glViewport(0, 0, width, height);
+  uint8_t window_RGBData[WINDOW_HEIGHT][WINDOW_WIDTH*3];
 
+  for (int i = LCD_HEIGHT-1; i >= 0 ; i--) {
+    for (int j = 0; j < LCD_WIDTH; j++) {
+      for (int k1 = 0; k1 < PX_SIZE; k1++) {
+	for (int k2 = 0; k2 < PX_SIZE; k2++) {
+	  window_RGBData[(LCD_HEIGHT - 1 -i)*PX_SIZE + k1][3*j*PX_SIZE + k2*PX_SIZE] = gb_gpu.framebuffer[i][j]*0x3F;
+	  window_RGBData[(LCD_HEIGHT -1 -i)*PX_SIZE + k1][j*3*PX_SIZE + k2*PX_SIZE+1] = gb_gpu.framebuffer[i][j]*0x3F;
+	  window_RGBData[(LCD_HEIGHT -1 -i)*PX_SIZE + k1][j*3*PX_SIZE + k2*PX_SIZE +2] = gb_gpu.framebuffer[i][j]*0x3F;
+	}
+      }
+    }
+  }
+
+  glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+  glfwGetFramebufferSize(window, &width, &height);
   glClear(GL_COLOR_BUFFER_BIT);
 
   glDrawPixels(WINDOW_WIDTH, WINDOW_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE, window_RGBData);

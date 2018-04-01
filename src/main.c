@@ -52,8 +52,9 @@ int main(int argc, char **argv) {
       print_regs(z80_p, 0);
       exit(0);
     }
-    if (step_gpu(gb_emu_p) == 1)
+    if (step_gpu(gb_emu_p) == 1) {
       render(gb_emu_p, window);
+  }
     handle_interrupts(gb_emu_p);
 
   }

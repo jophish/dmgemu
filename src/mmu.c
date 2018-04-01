@@ -4,7 +4,7 @@
 #include <string.h>
 #include "mmu.h"
 #include "emu.h"
-
+#include "gpu.h"
 
 int get_mem_region(mem_addr addr) {
   if (addr < RES_INT_VEC_END) {
@@ -131,6 +131,7 @@ int write_8(emu *gb_emu_p, mem_addr addr, uint8_t val) {
       ;
       buf_offset = addr - CHAR_RAM_START;
       gb_emu_p->gb_mmu.char_ram[buf_offset] = val;
+      update_tileset(gb_emu_p, addr, val);
       break;
     case (REGION_BG_MAP_DATA_1) :
       ;

@@ -566,7 +566,7 @@ static const opcode op_array[256] = {
 {0xef, 16, 0, 1,  false, ARG_28H, ARG_NONE, "rst 28h", OP_RST},
 {0xf0, 12, 0, 2,  false, ARG_A, ARG_IND_A8, "ldh a, (0x%04x)", OP_LDH_A_8IM},
 {0xf1, 12, 0, 1,  false, ARG_AF, ARG_NONE, "pop af", OP_POP},
-{0xf2, 8, 0, 2,  false, ARG_A, ARG_IND_C, "ld a, (c)", OP_TMP},
+{0xf2, 8, 0, 1,  false, ARG_A, ARG_IND_C, "ld a, (c)", OP_TMP},
 {0xf3, 4, 0, 1,  false, ARG_NONE, ARG_NONE, "di", OP_DI},
 {0xf4, 0, 0, 0, false, ARG_NONE, ARG_NONE, "not an op!", OP_TMP},
 {0xf5, 16, 0, 1,  false, ARG_AF, ARG_NONE, "push af", OP_PUSH},

@@ -2,6 +2,7 @@
 #define GPU_H
 
 #include <stdint.h>
+#include "mmu.h"
 
 // Pixel lengths of screen and background
 #define LCD_WIDTH 160
@@ -59,11 +60,25 @@ typedef struct gpu {
   uint32_t gpu_clock;
   uint16_t line;
   gpu_regs gb_gpu_regs;
-  uint8_t framebuffer[LCD_WIDTH*LCD_HEIGHT];
+  uint8_t framebuffer[LCD_HEIGHT][LCD_WIDTH];
+  uint8_t tileset[SZ_CHAR_RAM/TILE_SIZE][PX_PER_ROW][PX_PER_ROW]; // One byte per pixel. Inefficient, but convenient
 } gpu;
 
 // Steps the GPU
 int step_gpu(emu *gb_emu_p);
+
+// Given a tile number, updates the tileset to reflect the contents of the given tile in char RAM.
+// This should be called whenever a write occurs to the char RAM region.
+int update_tileset(emu *gb_emu_p, uint16_t addr, uint8_t val);
+
+// Draws a scanline to the framebuffer corresponding to the current contents of the LY register
+int draw_scanline(emu *gb_emu_p);
+
+// Given a BGP palette and a pixel, returns the translated pixel
+int translate_palette_px(uint8_t bgp_val, uint8_t px);
+
+// Given an x, y coordinate, returns the corresponding pixel in the background
+int coord_to_pixel(emu *gb_emu_p, uint16_t x, uint16_t y);
 
 // Initializes the GPU with default values
 void init_gpu(gpu *gb_gpu_p);

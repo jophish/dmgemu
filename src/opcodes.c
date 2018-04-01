@@ -698,7 +698,7 @@ int dispatch_op(emu *gb_emu_p, opcode *op_p) {
   uint16_t new_pc, b16_im, sp;
   opcode op_struct;
   int err;
-
+  //printf("PC: 0x%04x\n", pc);
   // If we have a CB op, use the next address as opcode
   if (addr_to_op(gb_emu_p, pc, &op_struct)) {
     op = read_8(gb_emu_p, pc+1);
