@@ -55,6 +55,13 @@ typedef struct gpu_regs {
     reg_dma;
 } gpu_regs;
 
+typedef struct oam_entry {
+  uint8_t y_pos,
+    x_pos,
+    tile_no,
+    flags;
+} oam_entry;
+
 typedef struct gpu {
   uint8_t mode;
   uint32_t gpu_clock;
