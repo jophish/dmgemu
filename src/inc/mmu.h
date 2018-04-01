@@ -48,6 +48,7 @@ typedef struct mmu {
   uint8_t *bg_map_data_1;
   uint8_t *bg_map_data_2;
   uint8_t *char_ram;
+  uint8_t reg_joyp; // top four bits are arrow data, low 4 bits are everything else
 } mmu;
 
 // Initializes buffers in the MMU
@@ -75,6 +76,7 @@ enum mem_region {
 
 enum io_region {
   REGION_IO_GPU,
+  REGION_JOYP,
 };
 
 // Definitions for borders in memory map
@@ -126,10 +128,12 @@ enum io_region {
 // Masks
 #define MASK_IE_FLAG 0xF
 #define MASK_STAT_WRITE 0x83
+#define MASK_JOYP_WRITE 0x30
 
 // Register definitions
 #define REG_IF 0xFF0F
 #define REG_IE 0xFFFF
+#define REG_JOYP 0xFF00
 
 // GPU regs
 #define REG_LCDC 0xFF40

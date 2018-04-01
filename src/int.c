@@ -1,6 +1,7 @@
 #include "int.h"
 #include "mmu.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 int handle_interrupts(emu *gb_emu_p) {
   cpu *z80_p = &(gb_emu_p->z80);
@@ -8,7 +9,6 @@ int handle_interrupts(emu *gb_emu_p) {
   // If IME isn't set, we don't have to do anything
   if (z80_p->regs.ime == 0)
     return 0;
-
 
   uint8_t if_val = read_8(gb_emu_p, REG_IF);
   uint8_t ie_val = read_8(gb_emu_p, REG_IE);

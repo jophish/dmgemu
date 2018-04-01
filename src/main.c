@@ -31,14 +31,14 @@ int main(int argc, char **argv) {
 
   opcode op_store;
   int op;
-  GLFWwindow *window = init_window();
+  GLFWwindow *window = init_window(gb_emu_p);
   while (true) {
     //printf("Now executing instruction at address 0x%04x\n", get_PC(z80_p));
-    #ifdef DEBUG
+#ifdef DEBUG
     if(debug_prompt(gb_emu_p) == ERR_READ_LINE) {
       exit(0);
 	}
-    #endif
+#endif
 
     op = dispatch_op(gb_emu_p, &op_store);
     if (op == ERR_OP_INVALID_OR_NOT_IMPLEMENTED) {
@@ -54,6 +54,7 @@ int main(int argc, char **argv) {
     }
     if (step_gpu(gb_emu_p) == 1) {
       render(gb_emu_p, window);
+      glfwPollEvents();
   }
     handle_interrupts(gb_emu_p);
 

@@ -15,8 +15,8 @@
 #define BG_BLOCKS_PER_ROW 32
 
 // Masks for flag selection
-#define BG_CODE_AREA_SELECT_FLAG 0x1000
-#define BG_CHAR_DATA_SELECT_FLAG 0x10000
+#define BG_CODE_AREA_SELECT_FLAG 0b1000
+#define BG_CHAR_DATA_SELECT_FLAG 0b10000
 
 // Tile size
 #define TILE_SIZE 0x10

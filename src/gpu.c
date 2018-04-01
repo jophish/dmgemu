@@ -22,7 +22,6 @@ int step_gpu(emu *gb_emu_p) {
 	if (gb_gpu_p->gb_gpu_regs.reg_ly == 143) {
 	  gb_gpu_p->mode = 1;
 	  // set V-Blank interrupt request
-	  
 	  gb_mmu_p->hw_io_regs[REG_IF-HW_IO_REGS_START] |= INT_V_BLANK;
 
 	  // Return a 1 to indicate a screen render is required
@@ -59,7 +58,8 @@ int step_gpu(emu *gb_emu_p) {
 	gb_gpu_p->gpu_clock = 0;
 	gb_gpu_p->mode = 0;
 	// We should eventually write a scanline to the framebuffer here
-	draw_scanline(gb_emu_p);
+	if ((gb_gpu_p->gb_gpu_regs.reg_lcdc & 0b10000000) != 0)
+	  draw_scanline(gb_emu_p);
       }
       break;
   }
@@ -69,12 +69,13 @@ int step_gpu(emu *gb_emu_p) {
 int draw_scanline(emu *gb_emu_p) {
   gpu *gb_gpu_p = &(gb_emu_p->gb_gpu);
   uint8_t framebuf_row = gb_gpu_p->gb_gpu_regs.reg_ly;
-  printf("drawing scanline: %d\n", framebuf_row);
+  //printf("drawing scanline: %d\n", framebuf_row);
   uint8_t x_off = gb_gpu_p->gb_gpu_regs.reg_scx;
   uint8_t y_off = gb_gpu_p->gb_gpu_regs.reg_scy;
   uint8_t px;
   uint8_t bgp_val = gb_gpu_p->gb_gpu_regs.reg_bgp;
   for (int i = 0; i < LCD_WIDTH; i++) {
+    //printf("pixel no: %d\n", i);
     px = translate_palette_px(bgp_val, coord_to_pixel(gb_emu_p, ((x_off + i) % BG_WIDTH), ((y_off + framebuf_row) % BG_HEIGHT)));
     gb_gpu_p->framebuffer[framebuf_row][i] = px;
     //printf("0x%02x\n", px);
@@ -88,14 +89,23 @@ int coord_to_pixel(emu *gb_emu_p, uint16_t x, uint16_t y) {
 
   // This tile number is the index in the background map where we find which tile we're getting the pixel from
   // If tile data table is at 8800-97ff, interpret the index in bg_map as 2c.
-  uint16_t map_data_st_addr;
-  uint16_t tile_no = BG_BLOCKS_PER_ROW*(y/BG_BLOCKS_PER_ROW) + (x / BG_BLOCKS_PER_ROW);
+  //uint16_t tile_data_st_addr;
+  uint16_t tile_no = BG_BLOCKS_PER_ROW*(y/PX_PER_ROW) + (x / PX_PER_ROW);
+
   uint8_t lcdc_val = gb_gpu_p->gb_gpu_regs.reg_lcdc;
+  uint16_t map_data_st_addr;
+
+  // Get the correct location
   if ((lcdc_val & BG_CODE_AREA_SELECT_FLAG) == 0)
-    map_data_st_addr = BG_MAP_DATA_1_START;
-   else 
-     map_data_st_addr = BG_MAP_DATA_2_START;
+     map_data_st_addr = BG_MAP_DATA_1_START;
+  else
+    map_data_st_addr = BG_MAP_DATA_2_START;
+
   uint8_t tile_index = read_8(gb_emu_p, map_data_st_addr + tile_no);
+
+
+  //printf("tile no: 0x%02x\n", tile_no);
+  //printf("tile index: 0x%02x\n", tile_index);
   uint8_t row_no = y % PX_PER_ROW;
   uint8_t px_no = x % PX_PER_ROW;
   return gb_gpu_p->tileset[tile_index][row_no][px_no];
@@ -122,89 +132,13 @@ int update_tileset(emu *gb_emu_p, uint16_t addr, uint8_t val) {
   // Now that we have the tile data for the updated row, parse the data into pixels
   uint8_t new_row[PX_PER_ROW];
   for (int i = 0; i < PX_PER_ROW; i++) {
-    new_row[i] = ((byte2 >> (6 - i)) & 0x2) | ((byte1 >> (7 - i)) & 0x1);
+    new_row[i] = (((byte2 >> (7 - i)) & 0x1) << 1) | ((byte1 >> (7 - i)) & 0x1);
     gb_gpu_p->tileset[tile_no][row_no][i] = new_row[i];
   }
 
   return 0;
 }
 
-/* int update_buffer(emu *gb_emu_p) { */
-
-/*   // First, write background to buffer */
-/*   //    - check bit 3 of LCDC to determine where BG map data is stored */
-/*   //    - check bit 4 of LCDC to determine where tile data is stored */
-/*   //    - check SCY and SCX to know where (0,0) is */
-/*   //    - for all BG tiles: */
-/*   //       - get the corresponding tile from the right location (use b4 of LCDC above) */
-/*   //       - translate tile pixels using palette translation */
-/*   //       - update the 8x8 pixel region in a total background buffer */
-/*   //    - using SCY and SCX, fill framebuffer by grabbing from total BG buffer */
-
-/*   gpu *gb_gpu_p = &(gb_emu_p->gb_gpu); */
-/*   uint16_t map_data_st_addr, char_data_st_addr; */
-/*   uint8_t x_off, y_off; */
-/*   uint8_t lcdc_val = gb_gpu_p->gb_gpu_regs.reg_lcdc; */
-/*   uint8_t bg_buffer[BG_WIDTH*BG_HEIGHT]; */
-
-/*   if ((lcdc_val & BG_CODE_AREA_SELECT_FLAG) == 0) */
-/*     map_data_st_addr = BG_MAP_DATA_1_START; */
-/*   else */
-/*     map_data_st_addr = BG_MAP_DATA_2_START; */
-
-/*   if ((lcdc_val & BG_CHAR_DATA_SELECT_FLAG) == 0) */
-/*     char_data_st_addr = CHAR_RAM_SEC_1_START; */
-/*   else */
-/*     char_data_st_addr = CHAR_RAM_SEC_0_START; */
-
-/*   x_off = gb_gpu_p->gb_gpu_regs.reg_scx; */
-/*   y_off = gb_gpu_p->gb_gpu_regs.reg_scy; */
-
-/*   uint8_t char_index; */
-/*   int tile_offset; */
-/*   uint8_t bgp_val = gb_gpu_p->gb_gpu_regs.reg_bgp; */
-
-/*   for (int i = 0; i < BG_BLOCKS; i++) { */
-/*     char_index = read_8(gb_emu_p, map_data_st_addr + i); */
-
-/*     // If we're using the second char ram section, tiles are */
-/*     // determined by 2c offset from 0x9000 */
-/*     if (char_data_st_addr == CHAR_RAM_SEC_1_START) */
-/*       tile_offset = byte_to_2c(char_index); */
-/*     else */
-/*       tile_offset = char_index; */
-
-/*     // Load tile into tile_data */
-/*     uint8_t tile_data[TILE_SIZE]; */
-/*     for (int j = 0; j < TILE_SIZE; j++) { */
-/*     tile_data[j] = read_8(gb_emu_p, char_data_st_addr + tile_offset*TILE_SIZE + j); */
-/*     } */
-
-/*     // Parse the esoteric format of the tile and make a tile struct */
-/*     tile cur_tile; */
-/*     tile_data_to_tile(tile_data, &cur_tile); */
-
-/*     // Now, convert the tile to the right palette */
-/*     translate_tile_palette(&cur_tile, bgp_val); */
-
-/*     // Use this tile struct to fill in bg_buffer */
-/*     uint8_t x_coord = i % BG_BLOCKS_PER_ROW; */
-/*     uint8_t y_coord = i / BG_BLOCKS_PER_ROW; */
-/*     for (int j = 0; j < PX_PER_ROW; j++) { */
-/*       for (int k = 0; k < PX_PER_ROW; k++) { */
-/* 	bg_buffer[x_coord*PX_PER_ROW + (y_coord+j)*PX_PER_ROW + k] = cur_tile.pixels[PX_PER_ROW*j + k]; */
-/*       } */
-/*     } */
-/*   } */
-
-/*   // Now, bg_buffer is full. Just get the right chunk and update the framebuffer. */
-/*   for (int j = 0; j < LCD_HEIGHT; j++) { */
-/*     for (int k = 0; k < LCD_WIDTH; k++) { */
-/*       gb_gpu_p->framebuffer[j*LCD_WIDTH + k] = bg_buffer[((y_off + j) % LCD_HEIGHT)*LCD_WIDTH + ((x_off + k) % LCD_WIDTH)]; */
-/*     } */
-/*   } */
-/*   return 0; */
-/* } */
 
 int translate_tile_palette(tile *tile_p, uint8_t bgp) {
   for (int i = 0; i < PX_PER_TILE; i++) {
