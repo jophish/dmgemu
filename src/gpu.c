@@ -85,10 +85,20 @@ int draw_scanline(emu *gb_emu_p) {
 int coord_to_pixel(emu *gb_emu_p, uint16_t x, uint16_t y) {
   gpu *gb_gpu_p = &(gb_emu_p->gb_gpu);
   // First, get tile number, then get row in tile, then get pixel in row
+
+  // This tile number is the index in the background map where we find which tile we're getting the pixel from
+  // If tile data table is at 8800-97ff, interpret the index in bg_map as 2c.
+  uint16_t map_data_st_addr;
   uint16_t tile_no = BG_BLOCKS_PER_ROW*(y/BG_BLOCKS_PER_ROW) + (x / BG_BLOCKS_PER_ROW);
+  uint8_t lcdc_val = gb_gpu_p->gb_gpu_regs.reg_lcdc;
+  if ((lcdc_val & BG_CODE_AREA_SELECT_FLAG) == 0)
+    map_data_st_addr = BG_MAP_DATA_1_START;
+   else 
+     map_data_st_addr = BG_MAP_DATA_2_START;
+  uint8_t tile_index = read_8(gb_emu_p, map_data_st_addr + tile_no);
   uint8_t row_no = y % PX_PER_ROW;
   uint8_t px_no = x % PX_PER_ROW;
-  return gb_gpu_p->tileset[tile_no][row_no][px_no];
+  return gb_gpu_p->tileset[tile_index][row_no][px_no];
 }
 
 int translate_palette_px(uint8_t bgp_val, uint8_t px) {
