@@ -4,8 +4,9 @@
 #include "cpu.h"
 #include <stdint.h>
 
-// Forward declaration of emu typedef to avoid circular include
+// Forward declarations of typedefs to avoid circular include
 typedef struct emu emu;
+typedef struct opcode opcode;
 
 typedef struct debugger {
   uint16_t *breakpoints; // List of breakpoints
@@ -54,7 +55,7 @@ bool check_breakpoint(debugger *dbg_p, uint16_t addr);
 void show_previous_inst(emu *gb_emu_p);
 
 // Displays the instruction at the given address, both in binary and in assembly
-void show_inst_at_addr(emu *gb_emu_p, uint16_t addr);
+void show_inst_at_addr(emu *gb_emu_p, uint16_t addr, opcode *op_struct_p);
 
 enum dbg_tok {
   TOK_STEP_INST,

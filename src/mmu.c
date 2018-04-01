@@ -4,7 +4,7 @@
 #include <string.h>
 #include "mmu.h"
 #include "emu.h"
-
+#include "gpu.h"
 
 int get_mem_region(mem_addr addr) {
   if (addr < RES_INT_VEC_END) {
@@ -47,6 +47,8 @@ int get_mem_region(mem_addr addr) {
 int get_hw_io_region(mem_addr addr) {
   if (addr >= REG_LCDC && addr <= REG_WX) {
     return REGION_IO_GPU;
+  } else if (addr == REG_JOYP){
+    return REGION_JOYP;
   } else {
     return ERR_INVALID_ADDRESS;
   }
@@ -63,7 +65,8 @@ int read_8(emu *gb_emu_p, mem_addr addr) {
       return gb_emu_p->gb_rom.data[addr];
       break;
     case (REGION_CHAR_RAM) :
-      break;
+      buf_offset = addr - CHAR_RAM_START;
+      return gb_emu_p->gb_mmu.char_ram[buf_offset];
     case (REGION_BG_MAP_DATA_1) :
       buf_offset = addr - BG_MAP_DATA_1_START;
       return gb_emu_p->gb_mmu.bg_map_data_1[buf_offset];
@@ -91,7 +94,17 @@ int read_8(emu *gb_emu_p, mem_addr addr) {
 	  ;
 	  gpu *gb_gpu_p = &(gb_emu_p->gb_gpu);
 	  return read_gpu_reg(gb_gpu_p, addr);
+	case (REGION_JOYP) :
+	  buf_offset = addr - HW_IO_REGS_START;
+	  uint8_t joyp_select = gb_emu_p->gb_mmu.hw_io_regs[buf_offset];
+	  if ((joyp_select & 0b100000) == 0) {
+	    // select button keys
+	    return (joyp_select & 0xf0) | (gb_emu_p->gb_mmu.reg_joyp & 0xf);
+	  } else {
+	    return (joyp_select & 0xf0) | ((gb_emu_p->gb_mmu.reg_joyp >> 4) & 0xf);
+	  }
 	default :
+
 	  buf_offset = addr - HW_IO_REGS_START;
 	  return gb_emu_p->gb_mmu.hw_io_regs[buf_offset];
       }
@@ -118,6 +131,7 @@ uint16_t read_16(emu *gb_emu_p, mem_addr addr) {
 int write_8(emu *gb_emu_p, mem_addr addr, uint8_t val) {
   uint16_t buf_offset;
   int err;
+  //gpu *gb_gpu_p = &(gb_emu_p->gb_gpu);
   switch (get_mem_region(addr)) {
     // These cases can safely fall through
     case (REGION_RES_INT_VEC) :
@@ -127,6 +141,10 @@ int write_8(emu *gb_emu_p, mem_addr addr, uint8_t val) {
       // Illegal write here  Can't write to ROM
       break;
     case (REGION_CHAR_RAM) :
+      //printf("writing to char ram at: 0x%04x with val: 0x%02x\n", addr, val);
+      buf_offset = addr - CHAR_RAM_START;
+      gb_emu_p->gb_mmu.char_ram[buf_offset] = val;
+      update_tileset(gb_emu_p, addr, val);
       break;
     case (REGION_BG_MAP_DATA_1) :
       ;
@@ -164,11 +182,17 @@ int write_8(emu *gb_emu_p, mem_addr addr, uint8_t val) {
 	    return err;
 	  }
 	  break;
+	case (REGION_JOYP):
+	  ;
+	  buf_offset = addr - HW_IO_REGS_START;
+	  // We use the actual index in the io register buffer to hold the joypad select data,
+	  // but the actual button data is held in reg_joyp
+	  gb_emu_p->gb_mmu.hw_io_regs[buf_offset] = (gb_emu_p->gb_mmu.hw_io_regs[buf_offset]  & ~MASK_JOYP_WRITE) | (val & MASK_JOYP_WRITE);
+	  break;
 	default :
-	  //printf("Writing value 0x%04x to address 0x%04x\n", val, addr);
 	  buf_offset = addr - HW_IO_REGS_START;
 	  gb_emu_p->gb_mmu.hw_io_regs[buf_offset] = val;
-      }
+	  }
       break;
     case (REGION_ZERO_PAGE) :
       buf_offset = addr - ZERO_PAGE_START;
@@ -195,6 +219,7 @@ void init_mmu(mmu *mmu_p) {
   uint8_t *io_buf = malloc(SZ_HW_IO_REGS);
   memset(io_buf, 0, SZ_HW_IO_REGS);
   mmu_p->hw_io_regs = io_buf;
+  mmu_p->reg_joyp = 0xff;
   uint8_t *zero_page_buf = malloc(SZ_ZERO_PAGE);
   mmu_p->zero_page = zero_page_buf;
   memset(zero_page_buf, 0, SZ_ZERO_PAGE);
@@ -204,4 +229,7 @@ void init_mmu(mmu *mmu_p) {
   uint8_t *bg_data_2_buf = malloc(SZ_BG_MAP_DATA_2);
   mmu_p->bg_map_data_2 = bg_data_2_buf;
   memset(bg_data_2_buf, 0, SZ_BG_MAP_DATA_2);
+  uint8_t *char_ram_buf = malloc(SZ_CHAR_RAM);
+  mmu_p->char_ram = char_ram_buf;
+  memset(char_ram_buf, 0, SZ_CHAR_RAM);
 }

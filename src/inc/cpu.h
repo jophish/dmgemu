@@ -9,10 +9,68 @@ registers and flags of the cpu*/
 #include <stdbool.h>
 
 
+/* typedef struct cpu_regs { */
+/*   uint8_t a, f, b, c, d, e, h, l; */
+/*   uint16_t sp, pc; */
+/*   bool ime; // interrupt master enable */
+/* } cpu_regs; */
+
 typedef struct cpu_regs {
-  uint8_t a, f, b, c, d, e, h, l;
-  uint16_t sp, pc;
-  bool ime; // interrupt master enable
+	struct {
+		union {
+			struct {
+				unsigned char f;
+				unsigned char a;
+			};
+			unsigned short af;
+		};
+	};
+	struct {
+		union {
+			struct {
+				unsigned char c;
+				unsigned char b;
+			};
+			unsigned short bc;
+		};
+	};
+	struct {
+		union {
+			struct {
+				unsigned char e;
+				unsigned char d;
+			};
+			unsigned short de;
+		};
+	};
+	struct {
+		union {
+			struct {
+				unsigned char l;
+				unsigned char h;
+			};
+			unsigned short hl;
+		};
+	};
+	struct {
+		union {
+			struct {
+				unsigned char sp_lo;
+				unsigned char sp_hi;
+			};
+		  unsigned short sp;
+		};
+	};
+	struct {
+		union {
+			struct {
+				unsigned char pc_lo;
+				unsigned char pc_hi;
+			};
+		  unsigned short pc;
+		};
+	};
+  bool ime;
 } cpu_regs;
 
 typedef struct clock {

@@ -50,7 +50,6 @@ int debug_prompt(emu *gb_emu_p) {
     } else {
       dbg_str = strtok(line, TOK_DELIM);
     }
-
     char *endptr;
     uint16_t addr;
     int mem_val;
@@ -272,7 +271,7 @@ int debug_prompt(emu *gb_emu_p) {
 	  break;
 	}
 
-	show_inst_at_addr(gb_emu_p, addr);
+	show_inst_at_addr(gb_emu_p, addr, NULL);
 	break;
 
       case (TOK_READ_MEM_INST_RANGE) :
@@ -316,8 +315,9 @@ int debug_prompt(emu *gb_emu_p) {
 	    printf("%s[0x%04x] ??\n", ERR_SPACE, addr+i);
 	    i += 1;
 	  } else {
-	    show_inst_at_addr(gb_emu_p, addr+i);
-	    i += op_length(mem_val);
+	    opcode op_struct;
+	    show_inst_at_addr(gb_emu_p, addr+i, &op_struct);
+	    i += op_struct.len;
 	  }
 
 	}
@@ -456,7 +456,6 @@ void show_breakpoints(debugger *dbg_p) {
   }
 }
 
-
 int remove_breakpoint(debugger *dbg_p, uint16_t addr) {
   for (int i = 0; i < MAX_BREAKPOINTS; i++) {
     if (dbg_p->breakpoints[i] == addr) {
@@ -480,19 +479,19 @@ bool check_breakpoint(debugger *dbg_p, uint16_t addr) {
   return false;
 }
 
-void show_inst_at_addr(emu *gb_emu_p, uint16_t addr) {
+void show_inst_at_addr(emu *gb_emu_p, uint16_t addr, opcode *op_struct_p) {
   char buf[MAX_BUF_LEN];
-  int err = 0;
-  if ((err = addr_to_op_str(gb_emu_p, addr, buf, MAX_BUF_LEN)) == ERR_OP_INVALID_OR_NOT_IMPLEMENTED) {
+  int err;
+  opcode op_struct;
+
+  if ((err = addr_to_op_str(gb_emu_p, addr, buf, MAX_BUF_LEN, &op_struct)) == ERR_OP_INVALID_OR_NOT_IMPLEMENTED) {
     printf("%sNo string data available for this op\n", ERR_SPACE);
     return;
-  }
-  if (err == ERR_BUF_LEN) {
+  } else if (err == ERR_BUF_LEN) {
     printf("Debugger needs more buffer space to print this op\n");
     exit(0);
   }
-  uint16_t op = read_8(gb_emu_p, addr);
-  uint16_t inst_len = op_length(op);
+
   // Formatting
   uint16_t space_len = 20 - (int)strlen(buf);
   char space[space_len];
@@ -500,11 +499,14 @@ void show_inst_at_addr(emu *gb_emu_p, uint16_t addr) {
     space[i] = ' ';
   }
   space[space_len-1] = '\0';
-  printf("%s[0x%04x] %s%s(%02x", ERR_SPACE, addr, buf, space, op);
-  for (int i = 1; i < inst_len; i++) {
+  printf("%s[0x%04x] %s%s(", ERR_SPACE, addr, buf, space);
+  for (int i = 0; i < op_struct.len; i++) {
     printf(" %02x", read_8(gb_emu_p, addr+i));
   }
-  printf(")\n");
+  printf(" )\n");
+  if (op_struct_p != NULL) {
+    *op_struct_p = op_struct;
+  }
   return;
 
 }
@@ -514,6 +516,6 @@ void show_previous_inst(emu *gb_emu_p) {
   if (addr == 0) {
     return;
   } else {
-    show_inst_at_addr(gb_emu_p, addr);
+    show_inst_at_addr(gb_emu_p, addr, NULL);
   }
 }
