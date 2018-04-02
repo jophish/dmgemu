@@ -69,21 +69,81 @@ int step_gpu(emu *gb_emu_p) {
 int draw_scanline(emu *gb_emu_p) {
   gpu *gb_gpu_p = &(gb_emu_p->gb_gpu);
   uint8_t framebuf_row = gb_gpu_p->gb_gpu_regs.reg_ly;
-  //printf("drawing scanline: %d\n", framebuf_row);
   uint8_t x_off = gb_gpu_p->gb_gpu_regs.reg_scx;
   uint8_t y_off = gb_gpu_p->gb_gpu_regs.reg_scy;
   uint8_t px;
   uint8_t bgp_val = gb_gpu_p->gb_gpu_regs.reg_bgp;
+
+  // Draw background first
   for (int i = 0; i < LCD_WIDTH; i++) {
     //printf("pixel no: %d\n", i);
-    px = translate_palette_px(bgp_val, coord_to_pixel(gb_emu_p, ((x_off + i) % BG_WIDTH), ((y_off + framebuf_row) % BG_HEIGHT)));
+    px = translate_palette_px(bgp_val, coord_to_bg_pixel(gb_emu_p, ((x_off + i) % BG_WIDTH), ((y_off + framebuf_row) % BG_HEIGHT)));
     gb_gpu_p->framebuffer[framebuf_row][i] = px;
     //printf("0x%02x\n", px);
+  }
+
+  // Take care of sprites
+  if (gb_gpu_p->gb_gpu_regs.reg_lcdc & 0x2) {
+
+    // Check LCDC to see if sprites are 8x8 or 8x16
+    uint8_t sprite_h = gb_gpu_p->gb_gpu_regs.reg_lcdc & 0x4 ? 16 : 8;
+    oam_entry sprite;
+
+    // List of pixels in sprites that intersect the current scanline. We need this in order to
+    // sort by priority in the case where we have too many sprites per row.
+    oam_update_entry pixels_to_write[NUM_SPRITES*PX_PER_ROW];
+
+    // Count for how many pixels we've written to our pixel array
+    uint16_t pixel_count = 0;
+    for (int i = 0; i < NUM_SPRITES; i++) {
+      sprite = gb_gpu_p->sprites[i];
+
+      // Crazy black magic. Determines whether our sprite intersects the current scanline, and which
+      // pixels in the sprite intersect where on the scanline.
+      uint16_t coord_x_lo = imax(8 - sprite.x_pos, 0);
+      uint16_t coord_x_hi = imin(LCD_WIDTH - sprite.x_pos, 7);
+      int coord_y = framebuf_row + 16 - sprite.y_pos;
+      uint16_t px_lo = imax(sprite.x_pos - 8, 0);
+      uint16_t px_hi = imin(LCD_WIDTH - 1, sprite.x_pos - 1);
+
+      // No intersections with our scanline, continue
+      if (!((coord_x_lo <= coord_x_hi) && (px_lo <= px_hi) && (coord_y >= 0) && (coord_y < sprite_h))) {
+	continue;
+      }
+
+      // Create an update entry for each intersecting pixel. Currently this does NOT account for 8x16 pixels
+
+      // Indices into the tile to grab the pixel. We might have X/Y flips so we have to do some computation
+      uint8_t x_index, y_index;
+      uint8_t palette = (sprite.palette_no) ? gb_gpu_p->gb_gpu_regs.reg_obp1 : gb_gpu_p->gb_gpu_regs.reg_obp0;
+      for (int j = 0; j <= (coord_x_hi - coord_x_lo); j++) {
+	oam_update_entry tmp_px = pixels_to_write[pixel_count];
+	tmp_px.line_x = px_lo + j;
+	//printf("line_x: %d\n", tmp_px.line_x);
+	tmp_px.obj_no = i;
+	tmp_px.oam_x_coord = sprite.x_pos;
+	x_index = sprite.y_flip ? (PX_PER_ROW - 1 - (coord_x_lo + i)) : (coord_x_lo + j);
+	y_index = sprite.x_flip ? (sprite_h - 1 - coord_y) : (coord_y);
+	uint8_t sprite_px = gb_gpu_p->tileset[sprite.tile_no][y_index][x_index];
+	tmp_px.px_col = translate_palette_px(palette, sprite_px);
+	tmp_px.priority = sprite.priority;
+	pixels_to_write[pixel_count] = tmp_px;
+	pixel_count++;
+      }
+
+    }
+
+    // Render pixels
+    for (int i = 0; i < pixel_count; i++) {
+      oam_update_entry tmp_entry = pixels_to_write[i];
+      //printf("line_x end: %d\n", tmp_entry.line_x);
+      gb_gpu_p->framebuffer[framebuf_row][tmp_entry.line_x] = tmp_entry.px_col;
+    }
   }
   return 0;
 }
 
-int coord_to_pixel(emu *gb_emu_p, uint16_t x, uint16_t y) {
+int coord_to_bg_pixel(emu *gb_emu_p, uint16_t x, uint16_t y) {
   gpu *gb_gpu_p = &(gb_emu_p->gb_gpu);
   // First, get tile number, then get row in tile, then get pixel in row
 
@@ -111,8 +171,8 @@ int coord_to_pixel(emu *gb_emu_p, uint16_t x, uint16_t y) {
   return gb_gpu_p->tileset[tile_index][row_no][px_no];
 }
 
-int translate_palette_px(uint8_t bgp_val, uint8_t px) {
-  return (bgp_val >> px*2) & 0b11;
+int translate_palette_px(uint8_t pal_val, uint8_t px) {
+  return (pal_val >> px*2) & 0b11;
 }
 
 int update_tileset(emu *gb_emu_p, uint16_t addr, uint8_t val) {
@@ -139,23 +199,6 @@ int update_tileset(emu *gb_emu_p, uint16_t addr, uint8_t val) {
   return 0;
 }
 
-
-int translate_tile_palette(tile *tile_p, uint8_t bgp) {
-  for (int i = 0; i < PX_PER_TILE; i++) {
-    tile_p->pixels[i] = (bgp >> tile_p->pixels[i]*2) & 0b11;
-  }
-  return 0;
-}
-int tile_data_to_tile(uint8_t *tile_data, tile *tile_p) {
-  int px;
-  for (int i = 0; i < PX_PER_TILE; i++) {
-    if ((px = tile_data_to_px(tile_data, i)) < 0)
-      return px;
-    tile_p->pixels[i] = px;
-  }
-  return 0;
-}
-
 int tile_data_to_px(uint8_t *tile_data, uint8_t px_num) {
   if (px_num >= PX_PER_TILE)
     return ERR_INVALID_PX;
@@ -165,6 +208,34 @@ int tile_data_to_px(uint8_t *tile_data, uint8_t px_num) {
     (((tile_data[byte_offset*2] >> bit_offset) & 0x1));
 }
 
+int write_oam(emu *gb_emu_p, uint16_t addr, uint8_t val) {
+  uint16_t buf_offset = addr - OAM_START;
+  gb_emu_p->gb_mmu.oam[buf_offset] = val;
+  gpu *gb_gpu_p = &(gb_emu_p->gb_gpu);
+  // Each OAM entry is four bytes long. We need to determine which number entry we've written to,
+  // and which byte, in order to update the gpu's sprites struct accordingly.
+  uint16_t sprite_index = buf_offset / SPRITE_SIZE;
+  uint8_t byte_no = buf_offset % SPRITE_SIZE;
+  switch (byte_no) {
+    case (0):
+      gb_gpu_p->sprites[sprite_index].y_pos = val;
+      break;
+    case (1):
+      gb_gpu_p->sprites[sprite_index].x_pos = val;
+      break;
+    case (2):
+      gb_gpu_p->sprites[sprite_index].tile_no = val;
+      break;
+    case (3):
+      (val & 0x10) ? (gb_gpu_p->sprites[sprite_index].palette_no = 1) : (gb_gpu_p->sprites[sprite_index].palette_no = 0);
+      (val & 0x20) ? (gb_gpu_p->sprites[sprite_index].x_flip = 1) : (gb_gpu_p->sprites[sprite_index].x_flip = 0);
+      (val & 0x40) ? (gb_gpu_p->sprites[sprite_index].y_flip = 1) : (gb_gpu_p->sprites[sprite_index].y_flip = 0);
+      (val & 0x80) ? (gb_gpu_p->sprites[sprite_index].priority = 1) : (gb_gpu_p->sprites[sprite_index].priority = 0);
+      break;
+  }
+  return 0;
+}
+
 void init_gpu(gpu *gb_gpu_p) {
   gb_gpu_p->mode = 2;
   gb_gpu_p->gpu_clock = 0;
@@ -172,9 +243,11 @@ void init_gpu(gpu *gb_gpu_p) {
   memset(&(gb_gpu_p->gb_gpu_regs), 0, sizeof(gpu_regs));
   memset(&(gb_gpu_p->framebuffer), 0, sizeof(gb_gpu_p->framebuffer));
   memset(&(gb_gpu_p->tileset), 0, sizeof(gb_gpu_p->tileset));
+  memset(&(gb_gpu_p->sprites), 0, sizeof(gb_gpu_p->sprites));
 }
 
-int write_gpu_reg(gpu *gb_gpu_p, uint16_t addr, uint8_t val) {
+int write_gpu_reg(emu *gb_emu_p, uint16_t addr, uint8_t val) {
+  gpu *gb_gpu_p = &(gb_emu_p->gb_gpu);
   switch (addr) {
     case (REG_LCDC) :
       // Bits 0-2 are read only
@@ -198,6 +271,11 @@ int write_gpu_reg(gpu *gb_gpu_p, uint16_t addr, uint8_t val) {
       break;
     case (REG_DMA) :
       gb_gpu_p->gb_gpu_regs.reg_dma = val;
+      uint16_t dma_src = val * 0x100;
+      for (int i = 0; i < SZ_OAM; i++)
+	write_oam(gb_emu_p, OAM_START + i, read_8(gb_emu_p, dma_src + i));
+      break;
+
       break;
     case (REG_BGP) :
       gb_gpu_p->gb_gpu_regs.reg_bgp = val;

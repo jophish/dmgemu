@@ -36,4 +36,10 @@ int byte_to_2c(uint8_t val);
 // or ERR_READ_LINE on failure
 int get_user_input(char *buf, int size);
 
+// Max of two ints
+int imax(int a, int b);
+
+// Min of two unsigned ints
+int imin(int a, int b);
+
 #endif /* UTIL_H */

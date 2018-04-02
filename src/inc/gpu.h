@@ -25,6 +25,10 @@
 #define PX_PER_TILE 64
 #define PX_PER_ROW 8
 
+// Size of OAM sprite attribute entry
+#define SPRITE_SIZE 0x4
+#define NUM_SPRITES SZ_OAM/SPRITE_SIZE
+
 // 'gpu.h' and 'gpu.c' contain methods and definitions relating to the GPU and LCD/display
 // features of the emulator. The framebuffer contained in the gpu struct consists of exactly
 // as many pixels as there are in the GB display. Each element in the array denotes the color
@@ -35,10 +39,6 @@
 // Forward declaration of emu
 typedef struct emu emu;
 
-// Simple tile struct. 8x8 pixels.
-typedef struct tile {
-  uint8_t pixels[PX_PER_TILE];
-} tile;
 
 typedef struct gpu_regs {
   uint8_t reg_lcdc,
@@ -59,8 +59,22 @@ typedef struct oam_entry {
   uint8_t y_pos,
     x_pos,
     tile_no,
-    flags;
+    y_flip,
+    x_flip,
+    palette_no,
+    priority;
 } oam_entry;
+
+// OAM struct used while updating scanlines. Each struct
+// represents a single pixel of some sprite that intersects
+// with the current scanline.
+typedef struct oam_update_entry {
+  uint8_t line_x, // x coord on scanline where pixel intersects
+    obj_no,       // OAM object number, used in calculating priority
+    oam_x_coord,  // X coordinate of sprite attribute data, used in calculating priority
+    px_col,       // Pixel color to write to scanline, adjusted for x/y reflections and palette
+    priority;     // OBJ-to-BG priority
+} oam_update_entry;
 
 typedef struct gpu {
   uint8_t mode;
@@ -69,6 +83,7 @@ typedef struct gpu {
   gpu_regs gb_gpu_regs;
   uint8_t framebuffer[LCD_HEIGHT][LCD_WIDTH];
   uint8_t tileset[SZ_CHAR_RAM/TILE_SIZE][PX_PER_ROW][PX_PER_ROW]; // One byte per pixel. Inefficient, but convenient
+  oam_entry sprites[NUM_SPRITES];
 } gpu;
 
 // Steps the GPU
@@ -85,14 +100,14 @@ int draw_scanline(emu *gb_emu_p);
 int translate_palette_px(uint8_t bgp_val, uint8_t px);
 
 // Given an x, y coordinate, returns the corresponding pixel in the background
-int coord_to_pixel(emu *gb_emu_p, uint16_t x, uint16_t y);
+int coord_to_bg_pixel(emu *gb_emu_p, uint16_t x, uint16_t y);
 
 // Initializes the GPU with default values
 void init_gpu(gpu *gb_gpu_p);
 
 // Writes val to the GPU register at the given address. If the given address
 // doesn't correspond to a valid GPU register, returns ERR_INVALID_ADDRESS.
-int write_gpu_reg(gpu *gb_gpu_p, uint16_t addr, uint8_t val);
+int write_gpu_reg(emu *gb_emu_p, uint16_t addr, uint8_t val);
 
 // Reads val from the GPU register at the given address. If the given address doesn't
 // correspond to a valid GPU register, returns ERR_INVALID_ADDRESS.
@@ -101,14 +116,12 @@ int read_gpu_reg(gpu *gb_gpu_p, uint16_t addr);
 // Updates the LCD buffer after end of VRAM read mode.
 int update_buffer(emu *gb_emu_p);
 
-// Given raw tile data, fills a tile struct with the correctly parsed values
-int tile_data_to_tile(uint8_t *tile_data_p, tile *tile_p);
-
 // Given raw tile data and a pixel number (counting from top left to bottom right),
 // returns the parsed value
 int tile_data_to_px(uint8_t *tile_data_p, uint8_t px_num);
 
-// Given a tile and a palette, translates the pixels in the tile according to the palette
-int translate_tile_palette(tile *tile_p, uint8_t bgp);
+// Given an address in the OAM region, writes val to the oam buffer of the GPU,
+// and updates the sprites buffer in the GPU appropriately
+int write_oam(emu *gb_emu_p, uint16_t addr, uint8_t val);
 
 #endif /* GPU_H */

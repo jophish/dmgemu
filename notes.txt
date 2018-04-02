@@ -1,0 +1,43 @@
+Procedure for updating framebuffer for sprites during scanline:
+
+- If !(LCDC & 0x2)  // sprites are not enabled
+  - END
+
+O(number of OAM objs * 8) = O(number OAM objs) // since at most 8 pixels per obj intersect a horizontal line
+- For each OAM object:  // If (LCDC & 0x4), then sprites are 8x16, so we checking if a sprite intersects the current line will be a bit different
+   - For EACH pixel of object that intersects the current line, add the following tuple to a list:
+     - pixel number in line to write to (x-coord)
+     - OAM object number (table ordering)
+     - x coordinate of OAM object
+     - color to write to pixel (translated through the selected palette for the object, and corrected for any x/y flips)
+     - OBJ-to-BG priority
+
+O(num OAM objs * lg(num OAM objs)) // since list is O(num OAM objs) in length
+- Sort list by the x coordinate of OAM object (small to large)
+   - For objects with equal x coordinates, treat those with lower OAM object numbers as smaller.
+
+- For the first TEN elements in the now-sorted list:
+   - If (OBJ-to-BG priority):
+     - Write pixel to scanline
+   - ELSE If (scanline[pixel no. to write to] == 0):
+     - Write pixel to scanline
+
+
+Overall complexity is O(num OAM objs)
+------------------------------------------------------------
+
+Sprite attributes can be written to the OAM in two ways:
+
+1. A direct DMA transfer by writing to the DMA register
+
+2. Writing directly to the OAM.
+
+The sprite structure in the gpu should be updated in EITHER of these two cases. We define a function write_OAM(emu *gb_emu_p, uint16_t addr, uint8_t val),
+which writes both to the oam region in the MMU, as well as updates the sprites struct in the gpu appropriately.
+
+When we do a direct DMA transfer by writing to the DMA register, we do the following:
+   - Actually write to the DMA register in the appropriate mmu buffer
+   - Get the address range of the source location for the sprite data
+   - For each source address, get its contents, and call write_OAM with the destination address and contents
+
+When we write directly to the OAM, we just call write_OAM and we're done

@@ -47,7 +47,7 @@ int get_mem_region(mem_addr addr) {
 int get_hw_io_region(mem_addr addr) {
   if (addr >= REG_LCDC && addr <= REG_WX) {
     return REGION_IO_GPU;
-  } else if (addr == REG_JOYP){
+  } else if (addr == REG_JOYP) {
     return REGION_JOYP;
   } else {
     return ERR_INVALID_ADDRESS;
@@ -83,7 +83,8 @@ int read_8(emu *gb_emu_p, mem_addr addr) {
     case (REGION_ECHO_RAM) :
       break;
     case (REGION_OAM) :
-      break;
+      buf_offset = addr - OAM_START;
+      return gb_emu_p->gb_mmu.ram[buf_offset];
     case (REGION_RESERVED) :
       break;
     case (REGION_HW_IO_REGS) :
@@ -98,13 +99,12 @@ int read_8(emu *gb_emu_p, mem_addr addr) {
 	  buf_offset = addr - HW_IO_REGS_START;
 	  uint8_t joyp_select = gb_emu_p->gb_mmu.hw_io_regs[buf_offset];
 	  if ((joyp_select & 0b100000) == 0) {
-	    // select button keys
+	    // select appropriate inputs based off of select bits
 	    return (joyp_select & 0xf0) | (gb_emu_p->gb_mmu.reg_joyp & 0xf);
 	  } else {
 	    return (joyp_select & 0xf0) | ((gb_emu_p->gb_mmu.reg_joyp >> 4) & 0xf);
 	  }
 	default :
-
 	  buf_offset = addr - HW_IO_REGS_START;
 	  return gb_emu_p->gb_mmu.hw_io_regs[buf_offset];
       }
@@ -168,6 +168,8 @@ int write_8(emu *gb_emu_p, mem_addr addr, uint8_t val) {
     case (REGION_ECHO_RAM) :
       break;
     case (REGION_OAM) :
+      // write to actual OAM buf, but also update sprite list in GPU. write_oam accomplishes both
+      write_oam(gb_emu_p, addr, val);
       break;
     case (REGION_RESERVED) :
       break;
@@ -176,9 +178,7 @@ int write_8(emu *gb_emu_p, mem_addr addr, uint8_t val) {
       // to various different subsystems
       switch (get_hw_io_region(addr)) {
 	case (REGION_IO_GPU) :
-	  ;
-	  gpu *gb_gpu_p = &(gb_emu_p->gb_gpu);
-	  if ((err = write_gpu_reg(gb_gpu_p, addr, val)) == ERR_INVALID_ADDRESS) {
+	  if ((err = write_gpu_reg(gb_emu_p, addr, val)) == ERR_INVALID_ADDRESS) {
 	    return err;
 	  }
 	  break;
@@ -207,11 +207,6 @@ int write_8(emu *gb_emu_p, mem_addr addr, uint8_t val) {
   return get_mem_region(addr);
 }
 
-void write_16(emu *gb_emu_p, mem_addr addr, uint16_t val) {
-  // Dummy interface for now.
-  return;
-}
-
 void init_mmu(mmu *mmu_p) {
   uint8_t *ram_buf = malloc(SZ_INTERNAL_RAM);
   mmu_p->ram = ram_buf;
@@ -232,4 +227,7 @@ void init_mmu(mmu *mmu_p) {
   uint8_t *char_ram_buf = malloc(SZ_CHAR_RAM);
   mmu_p->char_ram = char_ram_buf;
   memset(char_ram_buf, 0, SZ_CHAR_RAM);
+  uint8_t *oam_buf = malloc(SZ_OAM);
+  mmu_p->oam = oam_buf;
+  memset(oam_buf, 0, SZ_OAM);
 }

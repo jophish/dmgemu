@@ -48,6 +48,7 @@ typedef struct mmu {
   uint8_t *bg_map_data_1;
   uint8_t *bg_map_data_2;
   uint8_t *char_ram;
+  uint8_t *oam;
   uint8_t reg_joyp; // top four bits are arrow data, low 4 bits are everything else
 } mmu;
 
@@ -124,6 +125,7 @@ enum io_region {
 #define SZ_BG_MAP_DATA_1 0x400
 #define SZ_BG_MAP_DATA_2 0x400
 #define SZ_CHAR_RAM 0x1800
+#define SZ_OAM 0xA0
 
 // Masks
 #define MASK_IE_FLAG 0xF

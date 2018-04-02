@@ -15,7 +15,6 @@ GLFWwindow *init_window(emu *gb_emu_p) {
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
   emu *gb_emu_p = glfwGetWindowUserPointer(window);
   mmu *mmu_p = &(gb_emu_p->gb_mmu);
-  printf("key %d pressed!\n", key);
 
   if (action == GLFW_RELEASE) {
     switch (key) {

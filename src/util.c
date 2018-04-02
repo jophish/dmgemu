@@ -50,3 +50,11 @@ uint8_t get_bit_offset(uint8_t op) {
 uint8_t get_t_code(uint8_t op) {
   return ((op >> 3) & REG_MASK);
 }
+
+int imax(int a, int b) {
+  return a > b ? a : b;
+}
+
+int imin(int a, int b) {
+  return a < b ? a : b;
+}
