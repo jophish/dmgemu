@@ -51,25 +51,14 @@ void render(emu *gb_emu_p, GLFWwindow *window) {
     return;
   uint8_t window_RGBData[WINDOW_HEIGHT][WINDOW_WIDTH*3];
 
-  /* for (int i = LCD_HEIGHT-1; i >= 0 ; i--) { */
-  /*   for (int j = 0; j < LCD_WIDTH; j++) { */
-  /*     for (int k1 = 0; k1 < PX_SIZE; k1++) { */
-  /* 	for (int k2 = 0; k2 < PX_SIZE; k2++) { */
-  /* 	  window_RGBData[(LCD_HEIGHT - 1 -i)*PX_SIZE + k1][3*j*PX_SIZE + k2*PX_SIZE] = gb_gpu.framebuffer[i][j]*0x3F; */
-  /* 	  window_RGBData[(LCD_HEIGHT -1 -i)*PX_SIZE + k1][j*3*PX_SIZE + k2*PX_SIZE+1] = gb_gpu.framebuffer[i][j]*0x3F; */
-  /* 	  window_RGBData[(LCD_HEIGHT -1 -i)*PX_SIZE + k1][j*3*PX_SIZE + k2*PX_SIZE +2] = gb_gpu.framebuffer[i][j]*0x3F; */
-  /* 	} */
-  /*     } */
-  /*   } */
-  /* } */
-
+  uint8_t palette[4] = {0xFF, 0xAA, 0x55, 0x00};
   for (int i = LCD_HEIGHT-1; i >= 0 ; i--) {
     for (int j = 0; j < LCD_WIDTH; j++) {
       for (int k1 = 0; k1 < PX_SIZE; k1++) {
 	for (int k2 = 0; k2 < PX_SIZE; k2++) {
-	  window_RGBData[(LCD_HEIGHT - 1 -i)*PX_SIZE + k1][3*j*PX_SIZE + k2*PX_SIZE] = gb_gpu.framebuffer[i][j]*0x3F;
-	  window_RGBData[(LCD_HEIGHT -1 -i)*PX_SIZE + k1][j*3*PX_SIZE + k2*PX_SIZE+1] = gb_gpu.framebuffer[i][j]*0x3F;
-	  window_RGBData[(LCD_HEIGHT -1 -i)*PX_SIZE + k1][j*3*PX_SIZE + k2*PX_SIZE +2] = gb_gpu.framebuffer[i][j]*0x3F;
+	  window_RGBData[(LCD_HEIGHT - 1 -i)*PX_SIZE + k1][3*j*PX_SIZE + k2*PX_SIZE] = palette[gb_gpu.framebuffer[i][j]];
+	  window_RGBData[(LCD_HEIGHT -1 -i)*PX_SIZE + k1][j*3*PX_SIZE + k2*PX_SIZE+1] = palette[gb_gpu.framebuffer[i][j]];
+	  window_RGBData[(LCD_HEIGHT -1 -i)*PX_SIZE + k1][j*3*PX_SIZE + k2*PX_SIZE +2] = palette[gb_gpu.framebuffer[i][j]];
 	}
       }
     }

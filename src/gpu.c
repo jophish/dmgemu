@@ -30,6 +30,7 @@ int step_gpu(emu *gb_emu_p) {
 	} else {
 	  gb_gpu_p->mode = 2;
 	}
+
 	gb_gpu_p->gpu_clock = 0;
 	gb_gpu_p->gb_gpu_regs.reg_ly++;
       }

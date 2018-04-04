@@ -190,6 +190,11 @@ enum op_type {
   OP_XOR_8IM,
   OP_SET_BIT_IND_HL,
   OP_SUB_IND_HL,
+  OP_RR_REG,
+  OP_RRA,
+  OP_OR_IND_HL,
+  OP_LDHL_8IM,
+  OP_LD_SP_HL,
   OP_TMP,
 };
 
@@ -239,6 +244,7 @@ int op_push_qq(emu *gb_emu_p, int qq_code);
 int op_pop_qq(emu *gb_emu_p, int qq_code);
 int op_ldhl_8im(emu *gb_emu_p, uint8_t val);
 int op_ld_ind_16im_sp(emu *gb_emu_p, uint16_t addr);
+int op_ldhl_8im(emu *gb_emu_p, uint8_t val);
 
 // 8 Bit Arithmetic and Logical Operations
 int op_add_a_r1(emu *gb_emu_p, int reg_code);
@@ -288,6 +294,8 @@ int op_res_bit_ind_hl(emu *gb_emu_p, uint8_t bit);
 int op_sla_r1(emu *gb_emu_p, int reg_code);
 int op_rlca(emu *gb_emu_p);
 int op_set_bit_ind_hl(emu *gb_emu_p, uint8_t bit);
+int op_rr_r1(emu *gb_emu_p, int reg_code);
+int op_rra(emu *gb_emu_p);
 
 // CB Instructions
 int op_swap_r1(emu *gb_emu_p, int reg_code);
@@ -376,7 +384,7 @@ static const opcode op_array[256] = {
 {0x1c, 4, 0, 1,  false, ARG_E, ARG_NONE, "inc e", OP_INC_REG},
 {0x1d, 4, 0, 1,  false, ARG_E, ARG_NONE, "dec e", OP_DEC_REG},
 {0x1e, 8, 0, 2,  false, ARG_E, ARG_D8, "ld e, 0x%02x", OP_LD_REG_8IM},
-{0x1f, 4, 0, 1,  false, ARG_NONE, ARG_NONE, "rra", OP_TMP},
+{0x1f, 4, 0, 1,  false, ARG_NONE, ARG_NONE, "rra", OP_RRA,},
 {0x20, 12, 8, 2,  false, ARG_NZ, ARG_R8, "jr nz, 0x%04x", OP_JR_NZ_8IM},
 {0x21, 12, 0, 3,  false, ARG_HL, ARG_D16, "ld hl, 0x%04x", OP_LD_DD_16IM},
 {0x22, 8, 0, 1,  false, ARG_IND_HLI, ARG_A, "ld (hli), a", OP_LD_IND_HLI_A},
@@ -527,7 +535,7 @@ static const opcode op_array[256] = {
 {0xb3, 4, 0, 1,  false, ARG_E, ARG_NONE, "or e", OP_OR_REG},
 {0xb4, 4, 0, 1,  false, ARG_H, ARG_NONE, "or h", OP_OR_REG},
 {0xb5, 4, 0, 1,  false, ARG_L, ARG_NONE, "or l", OP_OR_REG},
-{0xb6, 8, 0, 1,  false, ARG_IND_HL, ARG_NONE, "or (hl)", OP_TMP},
+{0xb6, 8, 0, 1,  false, ARG_IND_HL, ARG_NONE, "or (hl)", OP_OR_IND_HL},
 {0xb7, 4, 0, 1,  false, ARG_A, ARG_NONE, "or a", OP_OR_REG},
 {0xb8, 4, 0, 1,  false, ARG_B, ARG_NONE, "cp b", OP_CP_A_REG},
 {0xb9, 4, 0, 1,  false, ARG_C, ARG_NONE, "cp c", OP_CP_A_REG},
@@ -593,8 +601,8 @@ static const opcode op_array[256] = {
 {0xf5, 16, 0, 1,  false, ARG_AF, ARG_NONE, "push af", OP_PUSH},
 {0xf6, 8, 0, 2,  false, ARG_D8, ARG_NONE, "or 0x%02x", OP_OR_8IM},
 {0xf7, 16, 0, 1,  false, ARG_30H, ARG_NONE, "rst 30h", OP_RST},
-{0xf8, 12, 0, 2,  false, ARG_HL, ARG_SPIR8, "ld hl 0x%04x", OP_TMP},
-{0xf9, 8, 0, 1,  false, ARG_SP, ARG_HL, "ld sp, hl", OP_TMP},
+{0xf8, 12, 0, 2,  false, ARG_HL, ARG_SPIR8, "ld hl 0x%04x", OP_LDHL_8IM},
+{0xf9, 8, 0, 1,  false, ARG_SP, ARG_HL, "ld sp, hl", OP_LD_SP_HL},
 {0xfa, 16, 0, 3,  false, ARG_A, ARG_IND_A16, "ld a, (0x%04x)", OP_LD_A_IND_IM16},
 {0xfb, 4, 0, 1,  false, ARG_NONE, ARG_NONE, "ei", OP_EI},
 {0xfc, 0, 0, 0, false, ARG_NONE, ARG_NONE, "not an op!", OP_TMP},
@@ -628,14 +636,14 @@ static const opcode cb_op_array[256] = {
 {0x15, 8, 0, 2,  false, ARG_L, ARG_NONE, "rl", OP_TMP},
 {0x16, 16, 0, 2,  false, ARG_IND_HL, ARG_NONE, "rl", OP_TMP},
 {0x17, 8, 0, 2,  false, ARG_A, ARG_NONE, "rl", OP_TMP},
-{0x18, 8, 0, 2,  false, ARG_B, ARG_NONE, "rr", OP_TMP},
-{0x19, 8, 0, 2,  false, ARG_C, ARG_NONE, "rr", OP_TMP},
-{0x1a, 8, 0, 2,  false, ARG_D, ARG_NONE, "rr", OP_TMP},
-{0x1b, 8, 0, 2,  false, ARG_E, ARG_NONE, "rr", OP_TMP},
-{0x1c, 8, 0, 2,  false, ARG_H, ARG_NONE, "rr", OP_TMP},
-{0x1d, 8, 0, 2,  false, ARG_L, ARG_NONE, "rr", OP_TMP},
+{0x18, 8, 0, 2,  false, ARG_B, ARG_NONE, "rr b", OP_RR_REG},
+{0x19, 8, 0, 2,  false, ARG_C, ARG_NONE, "rr c", OP_RR_REG},
+{0x1a, 8, 0, 2,  false, ARG_D, ARG_NONE, "rr d", OP_RR_REG},
+{0x1b, 8, 0, 2,  false, ARG_E, ARG_NONE, "rr e", OP_RR_REG},
+{0x1c, 8, 0, 2,  false, ARG_H, ARG_NONE, "rr h", OP_RR_REG},
+{0x1d, 8, 0, 2,  false, ARG_L, ARG_NONE, "rr l", OP_RR_REG},
 {0x1e, 16, 0, 2,  false, ARG_IND_HL, ARG_NONE, "rr", OP_TMP},
-{0x1f, 8, 0, 2,  false, ARG_A, ARG_NONE, "rr", OP_TMP},
+{0x1f, 8, 0, 2,  false, ARG_A, ARG_NONE, "rr a", OP_RR_REG},
 {0x20, 8, 0, 2,  false, ARG_B, ARG_NONE, "sla b", OP_SLA_REG},
 {0x21, 8, 0, 2,  false, ARG_C, ARG_NONE, "sla c", OP_SLA_REG},
 {0x22, 8, 0, 2,  false, ARG_D, ARG_NONE, "sla d", OP_SLA_REG},
