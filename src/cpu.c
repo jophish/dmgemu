@@ -11,6 +11,7 @@ void init_cpu(cpu *z80) {
   set_PC(z80, 0x0100);
   set_flag_IME(z80);
   z80->halt = false;
+  z80->regs.ei_enable = false;
 }
 
 void print_regs(cpu *z80, bool width) {

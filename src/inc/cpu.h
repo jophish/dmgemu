@@ -71,6 +71,8 @@ typedef struct cpu_regs {
 		};
 	};
   bool ime;
+  bool ei_enable;
+  uint8_t ei_cycle_count;
 } cpu_regs;
 
 typedef struct z80_clock {

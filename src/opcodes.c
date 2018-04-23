@@ -1086,6 +1086,15 @@ int dispatch_op(emu *gb_emu_p, opcode *op_p) {
   cycles = op_struct.cyc1;
   new_pc = pc + op_struct.len;
 
+  // If EI was our last instruction, we enable the IME after 4 cycles
+  if (z80_p->regs.ei_enable) {
+    z80_p->regs.ei_cycle_count += z80_p->clk.prev_m_cycles;
+    if (z80_p->regs.ei_cycle_count > 4) {
+      z80_p->regs.ei_enable = false;
+      z80_p->regs.ei_cycle_count = 0;
+      set_flag_IME(z80_p);
+    }
+  }
   //printf("old pc: 0x%04x. new pc: 0x%04x\n", pc, new_pc);
   switch (op_struct.op_type) {
   case (OP_NOP):
@@ -1196,7 +1205,12 @@ int dispatch_op(emu *gb_emu_p, opcode *op_p) {
     set_SP(z80_p, (get_SP(z80_p) + 2));
     break;
   case (OP_EI):
-    set_flag_IME(z80_p);
+    // EI actually disables interrupts for one instruction, then enables them
+    // just before the next instruction is dispatched
+    ;
+    z80_p->regs.ei_enable = true;
+    z80_p->regs.ei_cycle_count = 0;
+    reset_flag_IME(z80_p);
     break;
   case (OP_CPL):
     if ((err = op_cpl(gb_emu_p)) < 0)
@@ -1522,7 +1536,7 @@ int dispatch_op(emu *gb_emu_p, opcode *op_p) {
     if ((err = op_ld_ind_16im_sp(gb_emu_p, read_16(gb_emu_p, pc+1))) < 0)
       return err;
     break;
-  case (OP_LD_SP_HL):
+   case (OP_LD_SP_HL):
     if ((err = op_ld_sp_hl(gb_emu_p)) < 0)
       return err;
     break;
