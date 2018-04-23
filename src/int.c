@@ -17,13 +17,19 @@ int handle_interrupts(emu *gb_emu_p) {
   if (int_and_val == 0)
     return 0;
 
-
+  
   uint16_t int_vector = 0;
 
   // Find the interrupt to service
   if ((int_and_val & INT_V_BLANK) != 0) {
     write_8(gb_emu_p, REG_IF, if_val & ~(INT_V_BLANK));
     int_vector = INT_ADDR_V_BLANK;
+  } else if ((int_and_val & INT_LCDC) != 0) {
+  } else if ((int_and_val & INT_TIMER) != 0) {
+    write_8(gb_emu_p, REG_IF, if_val & ~(INT_TIMER));
+    int_vector = INT_ADDR_TIMER;
+  } else if ((int_and_val & INT_SERIAL) != 0) {
+  } else if ((int_and_val & INT_JOYPAD) != 0) {
   }
 
   // Push the current PC
@@ -38,9 +44,11 @@ int handle_interrupts(emu *gb_emu_p) {
   // Reset IME
   z80_p->regs.ime = 0;
 
-  if (int_vector == 0)
+  if (int_vector == 0) {
+    printf("Interrupt vector is invalid!\n");
+    printf("Enabled interrupts: 0x%04x\n", int_and_val);
     exit(1);
-
+  }
   // Set PC and return
   set_PC(z80_p, int_vector);
 
