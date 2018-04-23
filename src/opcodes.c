@@ -1059,6 +1059,11 @@ int op_sra_r1( emu *gb_emu_p, int reg_code) {
   return 0;
 }
 
+int op_halt(emu *gb_emu_p) {
+  cpu *z80_p = &(gb_emu_p->z80);
+  z80_p->halt = true;
+  return 0;
+}
 int dispatch_op(emu *gb_emu_p, opcode *op_p) {
   cpu *z80_p = &(gb_emu_p->z80);
   uint16_t pc = get_PC(z80_p);
@@ -1575,6 +1580,10 @@ int dispatch_op(emu *gb_emu_p, opcode *op_p) {
     break;
   case (OP_SRA_REG):
     if ((err = op_sra_r1(gb_emu_p, get_reg_code_lo(op))) < 0)
+      return err;
+    break;
+  case (OP_HALT):
+    if ((err = op_halt(gb_emu_p)) < 0)
       return err;
     break;
   default:

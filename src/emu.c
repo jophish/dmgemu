@@ -5,4 +5,5 @@ void init_emu(emu *emu_p) {
   init_mmu(&(emu_p->gb_mmu));
   init_gpu(&(emu_p->gb_gpu));
   init_dbg(&(emu_p->gb_debugger));
+  init_timer(&(emu_p->gb_timer));
 }

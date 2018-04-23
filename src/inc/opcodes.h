@@ -216,6 +216,7 @@ enum op_type {
   OP_RRC_REG,
   OP_RL_REG,
   OP_SRA_REG,
+  OP_HALT,
 };
 
 typedef struct opcode {
@@ -318,7 +319,6 @@ int op_set_bit_r1(emu *gb_emu_p, uint8_t bit, int reg_code);
 int op_scf(emu *gb_emu_p);
 int op_ccf(emu *gb_emu_p);
 
-// CB Instructions
 int op_swap_r1(emu *gb_emu_p, int reg_code);
 int op_swap_ind_hl(emu *gb_emu_p);
 
@@ -338,6 +338,7 @@ int op_sra_r1(emu *gb_emu_p, int reg_code);
 
 int op_daa(emu *gb_emu_p);
 
+int op_halt(emu *gb_emu_p);
 
 // Given an argument, determines whether or not the mnemonic requires
 // arguments based off of bytes following the opcode.
@@ -508,7 +509,7 @@ static const opcode op_array[256] = {
 {0x73, 8, 0, 1,  false, ARG_IND_HL, ARG_E, "ld (hl), e", OP_LD_IND_HL_REG},
 {0x74, 8, 0, 1,  false, ARG_IND_HL, ARG_H, "ld (hl), h", OP_LD_IND_HL_REG},
 {0x75, 8, 0, 1,  false, ARG_IND_HL, ARG_L, "ld (hl), l", OP_LD_IND_HL_REG},
-{0x76, 4, 0, 1,  false, ARG_NONE, ARG_NONE, "halt", OP_TMP},
+{0x76, 4, 0, 1,  false, ARG_NONE, ARG_NONE, "halt", OP_HALT},
 {0x77, 8, 0, 1,  false, ARG_IND_HL, ARG_A, "ld (hl), a", OP_LD_IND_HL_REG},
 {0x78, 4, 0, 1,  false, ARG_A, ARG_B, "ld a, b", OP_LD_R1_R2},
 {0x79, 4, 0, 1,  false, ARG_A, ARG_C, "ld a, c", OP_LD_R1_R2},

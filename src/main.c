@@ -4,6 +4,7 @@
 #include <time.h>
 #include "cpu.h"
 #include "rom.h"
+#include "timer.h"
 #include "opcodes.h"
 #include "emu.h"
 #include "debug.h"
@@ -61,18 +62,27 @@ int main(int argc, char **argv) {
 #endif
 
     timer = timer_start();
-    op = dispatch_op(gb_emu_p, &op_store);
-    if (op == ERR_OP_INVALID_OR_NOT_IMPLEMENTED) {
+    if (z80_p->halt == false) {
+      op = dispatch_op(gb_emu_p, &op_store);
+      if (op == ERR_OP_INVALID_OR_NOT_IMPLEMENTED) {
       printf("Unimplemented op:\n");
       show_inst_at_addr(gb_emu_p, get_PC(z80_p), NULL);
       exit(0);
+      }
+      if (op == ERR_INVALID_ADDRESS) {
+	printf("Invalid address in op (pc: 0x%04x)\n", get_PC(z80_p));
+	printf("%s\n",op_store.mnemonic);
+	print_regs(z80_p, 0);
+	exit(0);
+      }
+    } else {
+      // if we've halted, just step the clock and nothing else
+      z80_p->clk.prev_cpu_cycles = 4;
+      z80_p->clk.prev_m_cycles = 1;
+      z80_p->clk.cpu_cycles += 4;
+      z80_p->clk.m_cycles += 1;
     }
-    if (op == ERR_INVALID_ADDRESS) {
-      printf("Invalid address in op (pc: 0x%04x)\n", get_PC(z80_p));
-      printf("%s\n",op_store.mnemonic);
-      print_regs(z80_p, 0);
-      exit(0);
-    }
+
     if (step_gpu(gb_emu_p) == 1) {
       render(gb_emu_p, window);
       glfwPollEvents();
@@ -80,7 +90,9 @@ int main(int argc, char **argv) {
       time_taken = time_taken;
       //printf("%f fps\n", 1.0/(((float)time_taken)/((float)1000000000)));
       timer2 = timer_start();
-  }
+    }
+
+    update_timer(gb_emu_p);
     handle_interrupts(gb_emu_p);
 
     cycles_taken = z80_p->clk.prev_cpu_cycles;

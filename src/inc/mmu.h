@@ -77,6 +77,7 @@ enum mem_region {
 
 enum io_region {
   REGION_IO_GPU,
+  REGION_TIMER,
   REGION_JOYP,
 };
 
@@ -151,5 +152,10 @@ enum io_region {
 #define REG_WY 0xFF4A
 #define REG_WX 0xFF4B
 
+// Timer regs
+#define REG_DIV 0xFF04
+#define REG_TIMA 0xFF05
+#define REG_TMA 0xFF06
+#define REG_TAC 0xFF07
 
 #endif /* MMU_H */

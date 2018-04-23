@@ -2,6 +2,7 @@
 #define EMU_H
 
 #include "mmu.h"
+#include "timer.h"
 #include "debug.h"
 #include "rom.h"
 #include "cpu.h"
@@ -12,6 +13,7 @@ typedef struct emu {
   rom gb_rom;
   mmu gb_mmu;
   gpu gb_gpu;
+  timer gb_timer;
   debugger gb_debugger;
 } emu;
 

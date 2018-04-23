@@ -5,6 +5,7 @@
 #include "mmu.h"
 #include "emu.h"
 #include "gpu.h"
+#include "timer.h"
 
 int get_mem_region(mem_addr addr) {
   if (addr < RES_INT_VEC_END) {
@@ -49,6 +50,8 @@ int get_hw_io_region(mem_addr addr) {
     return REGION_IO_GPU;
   } else if (addr == REG_JOYP) {
     return REGION_JOYP;
+  } else if (addr >= REG_DIV && addr <= REG_TAC) {
+    return REGION_TIMER;
   } else {
     return ERR_INVALID_ADDRESS;
   }
@@ -96,6 +99,10 @@ int read_8(emu *gb_emu_p, mem_addr addr) {
 	  ;
 	  gpu *gb_gpu_p = &(gb_emu_p->gb_gpu);
 	  return read_gpu_reg(gb_gpu_p, addr);
+        case (REGION_TIMER) :
+	  ;
+	  timer *gb_timer_p = &(gb_emu_p->gb_timer);
+	  return read_timer_reg(gb_timer_p, addr);
 	case (REGION_JOYP) :
 	  buf_offset = addr - HW_IO_REGS_START;
 	  uint8_t joyp_select = gb_emu_p->gb_mmu.hw_io_regs[buf_offset];
@@ -183,6 +190,11 @@ int write_8(emu *gb_emu_p, mem_addr addr, uint8_t val) {
       switch (get_hw_io_region(addr)) {
 	case (REGION_IO_GPU) :
 	  if ((err = write_gpu_reg(gb_emu_p, addr, val)) == ERR_INVALID_ADDRESS) {
+	    return err;
+	  }
+	  break;
+      case (REGION_TIMER) :
+	  if ((err = write_timer_reg(gb_emu_p, addr, val)) == ERR_INVALID_ADDRESS) {
 	    return err;
 	  }
 	  break;

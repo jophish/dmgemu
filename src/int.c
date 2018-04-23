@@ -6,17 +6,22 @@
 int handle_interrupts(emu *gb_emu_p) {
   cpu *z80_p = &(gb_emu_p->z80);
 
-  // If IME isn't set, we don't have to do anything
-  if (z80_p->regs.ime == 0)
-    return 0;
-
   uint8_t if_val = read_8(gb_emu_p, REG_IF);
   uint8_t ie_val = read_8(gb_emu_p, REG_IE);
   uint8_t int_and_val = if_val & ie_val;
+
+  // If an interrupt is requested and enabled, get us out of HALT mode
+  if (int_and_val && z80_p->halt) {
+    z80_p->halt = false;
+  }
+
+  // If IME isn't set, we don't have to do anything
+  if (z80_p->regs.ime == 0)
+      return 0;
+
   // If no interrupts have been requested that are also enabled, just end
   if (int_and_val == 0)
     return 0;
-
 
   uint16_t int_vector = 0;
 
