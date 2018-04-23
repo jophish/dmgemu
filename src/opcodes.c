@@ -612,11 +612,11 @@ int op_inc_r1(emu *gb_emu_p, int reg_code) {
   if ((err = reg_code_to_pointer(z80_p, reg_code, &reg_p)) < 0)
     return err;
   check_hc_add(*reg_p, 0x01) ? set_flag_H(z80_p) : reset_flag_H(z80_p);
-  reset_flag_H(z80_p);
 
   *reg_p = *reg_p + 0x01;
-
+  
   (*reg_p == 0x00) ? set_flag_Z(z80_p) : reset_flag_Z(z80_p);
+  reset_flag_N(z80_p);
   return 0;
 }
 
@@ -637,7 +637,8 @@ int op_sub_a_ind_hl(emu *gb_emu_p) {
   return op_sub_a_8im(gb_emu_p, val);
 
 }
-int op_sub_a_8im( emu *gb_emu_p, uint8_t val) {
+
+int op_sub_a_8im(emu *gb_emu_p, uint8_t val) {
   cpu *z80_p = &(gb_emu_p->z80);
   (z80_p->regs.a & 0x0f) < (val & 0x0f) ? set_flag_H(z80_p) : reset_flag_H(z80_p);
   (z80_p->regs.a < val) ? set_flag_C(z80_p) : reset_flag_C(z80_p);
@@ -648,13 +649,18 @@ int op_sub_a_8im( emu *gb_emu_p, uint8_t val) {
 }
 
 int op_sbc_a_r1(emu *gb_emu_p, int reg_code){
-  return -1;
+  cpu *z80_p = &(gb_emu_p->z80);
+  uint8_t *reg_p;
+  int err;
+  if ((err = reg_code_to_pointer(z80_p, reg_code, &reg_p)) < 0)
+    return err;
+  return op_sbc_a_8im(gb_emu_p, *reg_p);
 }
+
 int op_sbc_a_8im(emu *gb_emu_p, uint8_t val){
   cpu *z80_p = &(gb_emu_p->z80);
   uint8_t result = z80_p->regs.a - val - get_flag_C(z80_p);
   int c = get_flag_C(z80_p);
-
   (((int)(z80_p->regs.a & 0xf) - (int)(val & 0xf) - c) < 0) ? set_flag_H(z80_p) : reset_flag_H(z80_p);
   (((int)(z80_p->regs.a) - (int)val - c) < 0) ? set_flag_C(z80_p) : reset_flag_C(z80_p);
   (result == 0) ? set_flag_Z(z80_p) : reset_flag_Z(z80_p);
@@ -665,7 +671,11 @@ int op_sbc_a_8im(emu *gb_emu_p, uint8_t val){
 }
 
 int op_sbc_a_ind_hl(emu *gb_emu_p){
-  return -1;
+  cpu *z80_p = &(gb_emu_p->z80);
+  int val;
+  if ((val = read_8(gb_emu_p, get_HL(z80_p))) < 0)
+    return val;
+  return op_sbc_a_8im(gb_emu_p, val);
 }
 
 int op_dec_ind_hl(emu *gb_emu_p) {
@@ -778,9 +788,9 @@ int op_sla_r1(emu *gb_emu_p, int reg_code) {
   int err;
   if ((err = reg_code_to_pointer(z80_p, reg_code, &reg_p)) < 0)
     return err;
-  ((*reg_p & 0b10000000) != 0) ? set_flag_C(z80_p) : reset_flag_C(z80_p);
-  *reg_p = *reg_p << 0x1;
-  set_flag_H(z80_p);
+  (*reg_p & 0x80) ? set_flag_C(z80_p) : reset_flag_C(z80_p);
+  *reg_p = *reg_p << 1;
+  reset_flag_H(z80_p);
   reset_flag_N(z80_p);
   (*reg_p == 0) ? set_flag_Z(z80_p) : reset_flag_Z(z80_p);
   return 0;
@@ -794,6 +804,22 @@ int op_rlca(emu *gb_emu_p) {
   uint8_t b = (z80_p->regs.a >> 7) & 0x01;
   (b == 0) ? reset_flag_C(z80_p) : set_flag_C(z80_p);
   z80_p->regs.a = (z80_p->regs.a << 1) | b;
+  return 0;
+}
+
+int op_rlc_r1(emu *gb_emu_p, int reg_code) {
+  cpu *z80_p = &(gb_emu_p->z80);
+  uint8_t *reg_p;
+  int err;
+  if ((err = reg_code_to_pointer(z80_p, reg_code, &reg_p)) < 0)
+    return err;
+  uint8_t b = (*reg_p >> 7) & 0x01;
+  *reg_p = (*reg_p << 1) | b;
+
+  (b == 0) ? reset_flag_C(z80_p) : set_flag_C(z80_p);
+  reset_flag_H(z80_p);
+  reset_flag_N(z80_p);
+  (*reg_p == 0) ? set_flag_Z(z80_p) : reset_flag_Z(z80_p);
   return 0;
 }
 
@@ -817,6 +843,7 @@ int op_rr_r1(emu *gb_emu_p, int reg_code) {
   reset_flag_N(z80_p);
   reset_flag_H(z80_p);
   *reg_p = val;
+  (*reg_p == 0) ? set_flag_Z(z80_p) : reset_flag_Z(z80_p);
   return 0;
 }
 
@@ -927,6 +954,22 @@ int op_ld_a_ind_c(emu *gb_emu_p) {
   return 0;
 }
 
+int op_scf(emu *gb_emu_p) {
+  cpu *z80_p = &(gb_emu_p->z80);
+  set_flag_C(z80_p);
+  reset_flag_H(z80_p);
+  reset_flag_N(z80_p);
+  return 0;
+}
+
+int op_ccf(emu *gb_emu_p) {
+  cpu *z80_p = &(gb_emu_p->z80);
+  get_flag_C(z80_p) ? reset_flag_C(z80_p) : set_flag_C(z80_p);
+  reset_flag_H(z80_p);
+  reset_flag_N(z80_p);
+  return 0;
+}
+
 int op_daa(emu *gb_emu_p) {
   // not really sure if any of this is right.
   cpu *z80_p = &(gb_emu_p->z80);
@@ -947,6 +990,72 @@ int op_daa(emu *gb_emu_p) {
 int op_ld_sp_hl(emu *gb_emu_p) {
   cpu *z80_p = &(gb_emu_p->z80);
   set_SP(z80_p, get_HL(z80_p));
+  return 0;
+}
+
+int op_rla(emu *gb_emu_p) {
+  cpu *z80_p = &(gb_emu_p->z80);
+  uint8_t c;
+  (z80_p->regs.a & 0x80) ? (c = 1) : (c = 0);
+  z80_p->regs.a = (z80_p->regs.a << 1) | get_flag_C(z80_p);
+  c ? set_flag_C(z80_p) : reset_flag_C(z80_p);
+  reset_flag_H(z80_p);
+  reset_flag_N(z80_p);
+  reset_flag_Z(z80_p);
+  return 0;
+}
+
+int op_rl_r1(emu *gb_emu_p, int reg_code) {
+  cpu *z80_p = &(gb_emu_p->z80);
+  uint8_t *reg_p;
+  int err;
+  if ((err = reg_code_to_pointer(z80_p, reg_code, &reg_p)) < 0)
+    return err;
+  uint8_t c;
+  (*reg_p & 0x80) ? (c = 1) : (c = 0);
+  *reg_p = (*reg_p << 1) | get_flag_C(z80_p);
+  c ? set_flag_C(z80_p) : reset_flag_C(z80_p);
+  reset_flag_H(z80_p);
+  reset_flag_N(z80_p);
+  (*reg_p == 0) ? set_flag_Z(z80_p) : reset_flag_Z(z80_p);
+  return 0;
+}
+
+int op_rrca(emu *gb_emu_p) {
+  cpu *z80_p = &(gb_emu_p->z80);
+  (z80_p->regs.a & 0x01) ? set_flag_C(z80_p) : reset_flag_C(z80_p);
+  z80_p->regs.a = (z80_p->regs.a >> 1) | (z80_p->regs.a << 7);
+  reset_flag_H(z80_p);
+  reset_flag_N(z80_p);
+  reset_flag_Z(z80_p);
+  return 0;
+}
+
+int op_rrc_r1(emu *gb_emu_p, int reg_code) {
+  cpu *z80_p = &(gb_emu_p->z80);
+  uint8_t *reg_p;
+  int err;
+  if ((err = reg_code_to_pointer(z80_p, reg_code, &reg_p)) < 0)
+    return err;
+  (*reg_p & 0x01) ? set_flag_C(z80_p) : reset_flag_C(z80_p);
+  *reg_p = (*reg_p >> 1) | (*reg_p << 7);
+  reset_flag_H(z80_p);
+  reset_flag_N(z80_p);
+  (*reg_p == 0) ? set_flag_Z(z80_p) : reset_flag_Z(z80_p);
+  return 0;
+}
+
+int op_sra_r1( emu *gb_emu_p, int reg_code) {
+  cpu *z80_p = &(gb_emu_p->z80);
+  uint8_t *reg_p;
+  int err;
+  if ((err = reg_code_to_pointer(z80_p, reg_code, &reg_p)) < 0)
+    return err;
+  (*reg_p & 0x01) ? set_flag_C(z80_p) : reset_flag_C(z80_p);
+  *reg_p = (*reg_p >> 1) | (*reg_p & 0x80);
+  reset_flag_H(z80_p);
+  reset_flag_N(z80_p);
+  (*reg_p == 0) ? set_flag_Z(z80_p) : reset_flag_Z(z80_p);
   return 0;
 }
 
@@ -1328,7 +1437,7 @@ int dispatch_op(emu *gb_emu_p, opcode *op_p) {
     if ((err = op_srl_r1(gb_emu_p, get_reg_code_lo(op))) < 0)
       return err;
     break;
-    case (OP_SLA_REG):
+  case (OP_SLA_REG):
     if ((err = op_sla_r1(gb_emu_p, get_reg_code_lo(op))) < 0)
       return err;
     break;
@@ -1424,8 +1533,48 @@ int dispatch_op(emu *gb_emu_p, opcode *op_p) {
     if ((err = op_sbc_a_8im(gb_emu_p, read_8(gb_emu_p, pc+1))) < 0)
       return err;
     break;
+  case (OP_SBC_REG):
+    if ((err = op_sbc_a_r1(gb_emu_p, get_reg_code_lo(op))) < 0)
+      return err;
+    break;
+  case (OP_SBC_IND_HL):
+    if ((err = op_sbc_a_ind_hl(gb_emu_p)) < 0)
+      return err;
+    break;
   case (OP_LD_A_IND_C):
     if ((err = op_ld_a_ind_c(gb_emu_p)) < 0)
+      return err;
+    break;
+  case (OP_SCF):
+    if ((err = op_scf(gb_emu_p)) < 0)
+      return err;
+    break;
+  case (OP_CCF):
+    if ((err = op_ccf(gb_emu_p)) < 0)
+      return err;
+    break;
+  case (OP_RLA):
+    if ((err = op_rla(gb_emu_p)) < 0)
+      return err;
+    break;
+  case (OP_RRCA):
+    if ((err = op_rrca(gb_emu_p)) < 0)
+      return err;
+    break;
+  case (OP_RLC_REG):
+    if ((err = op_rlc_r1(gb_emu_p, get_reg_code_lo(op))) < 0)
+      return err;
+    break;
+  case (OP_RRC_REG):
+    if ((err = op_rrc_r1(gb_emu_p, get_reg_code_lo(op))) < 0)
+      return err;
+    break;
+  case (OP_RL_REG):
+    if ((err = op_rl_r1(gb_emu_p, get_reg_code_lo(op))) < 0)
+      return err;
+    break;
+  case (OP_SRA_REG):
+    if ((err = op_sra_r1(gb_emu_p, get_reg_code_lo(op))) < 0)
       return err;
     break;
   default:

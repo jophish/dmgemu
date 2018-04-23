@@ -202,10 +202,20 @@ enum op_type {
   OP_LD_HL_8IM,
   OP_ADD_SP_8IM,
   OP_SBC_8IM,
+  OP_SBC_REG,
+  OP_SBC_IND_HL,
   OP_CALL_Z_16IM,
   OP_CALL_NC_16IM,
   OP_CALL_C_16IM,
   OP_LD_A_IND_C,
+  OP_SCF,
+  OP_CCF,
+  OP_RLA,
+  OP_RRCA,
+  OP_RLC_REG,
+  OP_RRC_REG,
+  OP_RL_REG,
+  OP_SRA_REG,
 };
 
 typedef struct opcode {
@@ -302,13 +312,11 @@ int op_bit_num_ind_hl(emu *gb_emu_p, uint8_t bit);
 int op_res_bit_r1(emu *gb_emu_p, uint8_t bit, int reg_code);
 int op_res_bit_ind_hl(emu *gb_emu_p, uint8_t bit);
 int op_sla_r1(emu *gb_emu_p, int reg_code);
-int op_rlca(emu *gb_emu_p);
 int op_set_bit_ind_hl(emu *gb_emu_p, uint8_t bit);
 int op_set_bit_r1(emu *gb_emu_p, uint8_t bit, int reg_code);
-int op_rr_r1(emu *gb_emu_p, int reg_code);
-int op_rr_ind_hl(emu *gb_emu_p);
 
-int op_rra(emu *gb_emu_p);
+int op_scf(emu *gb_emu_p);
+int op_ccf(emu *gb_emu_p);
 
 // CB Instructions
 int op_swap_r1(emu *gb_emu_p, int reg_code);
@@ -317,6 +325,16 @@ int op_swap_ind_hl(emu *gb_emu_p);
 // Rotate Shift Instructions
 int op_srl_r1(emu *gb_emu_p, int reg_code);
 int op_srl_ind_hl(emu *gb_emu_p);
+int op_rla(emu *gb_emu_p);
+int op_rrca(emu *gb_emu_p);
+int op_rlca(emu *gb_emu_p);
+int op_rr_r1(emu *gb_emu_p, int reg_code);
+int op_rl_r1(emu *gb_emu_p, int reg_code);
+int op_rr_ind_hl(emu *gb_emu_p);
+int op_rra(emu *gb_emu_p);
+int op_rlc_r1(emu *gb_emu_p, int reg_code);
+int op_rrc_r1(emu *gb_emu_p, int reg_code);
+int op_sra_r1(emu *gb_emu_p, int reg_code);
 
 int op_daa(emu *gb_emu_p);
 
@@ -387,7 +405,7 @@ static const opcode op_array[256] = {
 {0xc, 4, 0, 1,  false, ARG_C, ARG_NONE, "inc c", OP_INC_REG},
 {0xd, 4, 0, 1,  false, ARG_C, ARG_NONE, "dec c", OP_DEC_REG},
 {0xe, 8, 0, 2,  false, ARG_C, ARG_D8, "ld c, 0x%02x", OP_LD_REG_8IM},
-{0xf, 4, 0, 1,  false, ARG_NONE, ARG_NONE, "rrca", OP_TMP},
+{0xf, 4, 0, 1,  false, ARG_NONE, ARG_NONE, "rrca", OP_RRCA},
 {0x10, 4, 0, 2,  false, ARG_0, ARG_NONE, "stop 0", OP_TMP},
 {0x11, 12, 0, 3,  false, ARG_DE, ARG_D16, "ld de, 0x%04x", OP_LD_DD_16IM},
 {0x12, 8, 0, 1,  false, ARG_IND_DE, ARG_A, "ld (de), a", OP_LD_IND_DE_A},
@@ -395,7 +413,7 @@ static const opcode op_array[256] = {
 {0x14, 4, 0, 1,  false, ARG_D, ARG_NONE, "inc d", OP_INC_REG},
 {0x15, 4, 0, 1,  false, ARG_D, ARG_NONE, "dec d", OP_DEC_REG},
 {0x16, 8, 0, 2,  false, ARG_D, ARG_D8, "ld d, 0x%02x", OP_LD_REG_8IM},
-{0x17, 4, 0, 1,  false, ARG_NONE, ARG_NONE, "rla", OP_TMP},
+{0x17, 4, 0, 1,  false, ARG_NONE, ARG_NONE, "rla", OP_RLA},
 {0x18, 12, 0, 2,  false, ARG_R8, ARG_NONE, "jr 0x%04x", OP_JR_8IM},
 {0x19, 8, 0, 1,  false, ARG_HL, ARG_DE, "add hl, de", OP_ADD_HL_SS},
 {0x1a, 8, 0, 1,  false, ARG_A, ARG_IND_DE, "ld a, (de)", OP_LD_A_IND_DE},
@@ -427,7 +445,7 @@ static const opcode op_array[256] = {
 {0x34, 12, 0, 1,  false, ARG_IND_HL, ARG_NONE, "inc (hl)", OP_INC_IND_HL},
 {0x35, 12, 0, 1,  false, ARG_IND_HL, ARG_NONE, "dec (hl)", OP_DEC_IND_HL},
 {0x36, 12, 0, 2,  false, ARG_IND_HL, ARG_D8, "ld (hl), 0x%02x", OP_LD_IND_HL_8IM},
-{0x37, 4, 0, 1,  false, ARG_NONE, ARG_NONE, "scf", OP_TMP},
+{0x37, 4, 0, 1,  false, ARG_NONE, ARG_NONE, "scf", OP_SCF},
 {0x38, 12, 8, 2,  false, ARG_C, ARG_R8, "jr c, 0x%04x", OP_JR_C_8IM},
 {0x39, 8, 0, 1,  false, ARG_HL, ARG_SP, "add hl, sp", OP_ADD_HL_SS},
 {0x3a, 8, 0, 1,  false, ARG_A, ARG_IND_HLD, "ld a, (hld)", OP_LD_A_IND_HLD},
@@ -435,7 +453,7 @@ static const opcode op_array[256] = {
 {0x3c, 4, 0, 1,  false, ARG_A, ARG_NONE, "inc a", OP_INC_REG},
 {0x3d, 4, 0, 1,  false, ARG_A, ARG_NONE, "dec a", OP_DEC_REG},
 {0x3e, 8, 0, 2,  false, ARG_A, ARG_D8, "ld a, 0x%02x", OP_LD_REG_8IM},
-{0x3f, 4, 0, 1,  false, ARG_NONE, ARG_NONE, "ccf", OP_TMP},
+{0x3f, 4, 0, 1,  false, ARG_NONE, ARG_NONE, "ccf", OP_CCF},
 {0x40, 4, 0, 1,  false, ARG_B, ARG_B, "ld b, b", OP_LD_R1_R2},
 {0x41, 4, 0, 1,  false, ARG_B, ARG_C, "ld b, c", OP_LD_R1_R2},
 {0x42, 4, 0, 1,  false, ARG_B, ARG_D, "ld b, d", OP_LD_R1_R2},
@@ -524,14 +542,14 @@ static const opcode op_array[256] = {
 {0x95, 4, 0, 1,  false, ARG_L, ARG_NONE, "sub l", OP_SUB_REG},
 {0x96, 8, 0, 1,  false, ARG_IND_HL, ARG_NONE, "sub (hl)", OP_SUB_IND_HL},
 {0x97, 4, 0, 1,  false, ARG_A, ARG_NONE, "sub a", OP_SUB_REG},
-{0x98, 4, 0, 1,  false, ARG_A, ARG_B, "sbc a, b", OP_TMP},
-{0x99, 4, 0, 1,  false, ARG_A, ARG_C, "sbc a, c", OP_TMP},
-{0x9a, 4, 0, 1,  false, ARG_A, ARG_D, "sbc a, d", OP_TMP},
-{0x9b, 4, 0, 1,  false, ARG_A, ARG_E, "sbc a, e", OP_TMP},
-{0x9c, 4, 0, 1,  false, ARG_A, ARG_H, "sbc a, h", OP_TMP},
-{0x9d, 4, 0, 1,  false, ARG_A, ARG_L, "sbc a, l", OP_TMP},
-{0x9e, 8, 0, 1,  false, ARG_A, ARG_IND_HL, "sbc a, (hl)", OP_TMP},
-{0x9f, 4, 0, 1,  false, ARG_A, ARG_A, "sbc a, a", OP_TMP},
+{0x98, 4, 0, 1,  false, ARG_A, ARG_B, "sbc a, b", OP_SBC_REG},
+{0x99, 4, 0, 1,  false, ARG_A, ARG_C, "sbc a, c", OP_SBC_REG},
+{0x9a, 4, 0, 1,  false, ARG_A, ARG_D, "sbc a, d", OP_SBC_REG},
+{0x9b, 4, 0, 1,  false, ARG_A, ARG_E, "sbc a, e", OP_SBC_REG},
+{0x9c, 4, 0, 1,  false, ARG_A, ARG_H, "sbc a, h", OP_SBC_REG},
+{0x9d, 4, 0, 1,  false, ARG_A, ARG_L, "sbc a, l", OP_SBC_REG},
+{0x9e, 8, 0, 1,  false, ARG_A, ARG_IND_HL, "sbc a, (hl)", OP_SBC_IND_HL},
+{0x9f, 4, 0, 1,  false, ARG_A, ARG_A, "sbc a, a", OP_SBC_REG},
 {0xa0, 4, 0, 1,  false, ARG_B, ARG_NONE, "and b", OP_AND_A_REG},
 {0xa1, 4, 0, 1,  false, ARG_C, ARG_NONE, "and c", OP_AND_A_REG},
 {0xa2, 4, 0, 1,  false, ARG_D, ARG_NONE, "and d", OP_AND_A_REG},
@@ -631,30 +649,30 @@ static const opcode op_array[256] = {
 };
 
 static const opcode cb_op_array[256] = {
-{0x0, 8, 0, 2,  false, ARG_B, ARG_NONE, "rlc", OP_TMP},
-{0x1, 8, 0, 2,  false, ARG_C, ARG_NONE, "rlc", OP_TMP},
-{0x2, 8, 0, 2,  false, ARG_D, ARG_NONE, "rlc", OP_TMP},
-{0x3, 8, 0, 2,  false, ARG_E, ARG_NONE, "rlc", OP_TMP},
-{0x4, 8, 0, 2,  false, ARG_H, ARG_NONE, "rlc", OP_TMP},
-{0x5, 8, 0, 2,  false, ARG_L, ARG_NONE, "rlc", OP_TMP},
+{0x0, 8, 0, 2,  false, ARG_B, ARG_NONE, "rlc b", OP_RLC_REG},
+{0x1, 8, 0, 2,  false, ARG_C, ARG_NONE, "rlc c", OP_RLC_REG},
+{0x2, 8, 0, 2,  false, ARG_D, ARG_NONE, "rlc d", OP_RLC_REG},
+{0x3, 8, 0, 2,  false, ARG_E, ARG_NONE, "rlc e", OP_RLC_REG},
+{0x4, 8, 0, 2,  false, ARG_H, ARG_NONE, "rlc h", OP_RLC_REG},
+{0x5, 8, 0, 2,  false, ARG_L, ARG_NONE, "rlc l", OP_RLC_REG},
 {0x6, 16, 0, 2,  false, ARG_IND_HL, ARG_NONE, "rlc", OP_TMP},
-{0x7, 8, 0, 2,  false, ARG_A, ARG_NONE, "rlc", OP_TMP},
-{0x8, 8, 0, 2,  false, ARG_B, ARG_NONE, "rrc", OP_TMP},
-{0x9, 8, 0, 2,  false, ARG_C, ARG_NONE, "rrc", OP_TMP},
-{0xa, 8, 0, 2,  false, ARG_D, ARG_NONE, "rrc", OP_TMP},
-{0xb, 8, 0, 2,  false, ARG_E, ARG_NONE, "rrc", OP_TMP},
-{0xc, 8, 0, 2,  false, ARG_H, ARG_NONE, "rrc", OP_TMP},
-{0xd, 8, 0, 2,  false, ARG_L, ARG_NONE, "rrc", OP_TMP},
+{0x7, 8, 0, 2,  false, ARG_A, ARG_NONE, "rlc a", OP_RLC_REG},
+{0x8, 8, 0, 2,  false, ARG_B, ARG_NONE, "rrc b", OP_RRC_REG},
+{0x9, 8, 0, 2,  false, ARG_C, ARG_NONE, "rrc c", OP_RRC_REG},
+{0xa, 8, 0, 2,  false, ARG_D, ARG_NONE, "rrc d", OP_RRC_REG},
+{0xb, 8, 0, 2,  false, ARG_E, ARG_NONE, "rrc e", OP_RRC_REG},
+{0xc, 8, 0, 2,  false, ARG_H, ARG_NONE, "rrc h", OP_RRC_REG},
+{0xd, 8, 0, 2,  false, ARG_L, ARG_NONE, "rrc l", OP_RRC_REG},
 {0xe, 16, 0, 2,  false, ARG_IND_HL, ARG_NONE, "rrc", OP_TMP},
-{0xf, 8, 0, 2,  false, ARG_A, ARG_NONE, "rrc", OP_TMP},
-{0x10, 8, 0, 2,  false, ARG_B, ARG_NONE, "rl", OP_TMP},
-{0x11, 8, 0, 2,  false, ARG_C, ARG_NONE, "rl", OP_TMP},
-{0x12, 8, 0, 2,  false, ARG_D, ARG_NONE, "rl", OP_TMP},
-{0x13, 8, 0, 2,  false, ARG_E, ARG_NONE, "rl", OP_TMP},
-{0x14, 8, 0, 2,  false, ARG_H, ARG_NONE, "rl", OP_TMP},
-{0x15, 8, 0, 2,  false, ARG_L, ARG_NONE, "rl", OP_TMP},
+{0xf, 8, 0, 2,  false, ARG_A, ARG_NONE, "rrc a", OP_RRC_REG},
+{0x10, 8, 0, 2,  false, ARG_B, ARG_NONE, "rl b", OP_RL_REG},
+{0x11, 8, 0, 2,  false, ARG_C, ARG_NONE, "rl c", OP_RL_REG},
+{0x12, 8, 0, 2,  false, ARG_D, ARG_NONE, "rl d", OP_RL_REG},
+{0x13, 8, 0, 2,  false, ARG_E, ARG_NONE, "rl e", OP_RL_REG},
+{0x14, 8, 0, 2,  false, ARG_H, ARG_NONE, "rl h", OP_RL_REG},
+{0x15, 8, 0, 2,  false, ARG_L, ARG_NONE, "rl l", OP_RL_REG},
 {0x16, 16, 0, 2,  false, ARG_IND_HL, ARG_NONE, "rl", OP_TMP},
-{0x17, 8, 0, 2,  false, ARG_A, ARG_NONE, "rl", OP_TMP},
+{0x17, 8, 0, 2,  false, ARG_A, ARG_NONE, "rl a", OP_RL_REG},
 {0x18, 8, 0, 2,  false, ARG_B, ARG_NONE, "rr b", OP_RR_REG},
 {0x19, 8, 0, 2,  false, ARG_C, ARG_NONE, "rr c", OP_RR_REG},
 {0x1a, 8, 0, 2,  false, ARG_D, ARG_NONE, "rr d", OP_RR_REG},
@@ -662,7 +680,7 @@ static const opcode cb_op_array[256] = {
 {0x1c, 8, 0, 2,  false, ARG_H, ARG_NONE, "rr h", OP_RR_REG},
 {0x1d, 8, 0, 2,  false, ARG_L, ARG_NONE, "rr l", OP_RR_REG},
 {0x1e, 16, 0, 2,  false, ARG_IND_HL, ARG_NONE, "rr (hl)", OP_RR_IND_HL},
-{0x1f, 8, 0, 2,  false, ARG_A, ARG_NONE, "rr a", OP_TMP},
+{0x1f, 8, 0, 2,  false, ARG_A, ARG_NONE, "rr a", OP_RR_REG},
 {0x20, 8, 0, 2,  false, ARG_B, ARG_NONE, "sla b", OP_SLA_REG},
 {0x21, 8, 0, 2,  false, ARG_C, ARG_NONE, "sla c", OP_SLA_REG},
 {0x22, 8, 0, 2,  false, ARG_D, ARG_NONE, "sla d", OP_SLA_REG},
@@ -671,14 +689,14 @@ static const opcode cb_op_array[256] = {
 {0x25, 8, 0, 2,  false, ARG_L, ARG_NONE, "sla l", OP_SLA_REG},
 {0x26, 16, 0, 2,  false, ARG_IND_HL, ARG_NONE, "sla", OP_TMP},
 {0x27, 8, 0, 2,  false, ARG_A, ARG_NONE, "sla a", OP_SLA_REG},
-{0x28, 8, 0, 2,  false, ARG_B, ARG_NONE, "sra", OP_TMP},
-{0x29, 8, 0, 2,  false, ARG_C, ARG_NONE, "sra", OP_TMP},
-{0x2a, 8, 0, 2,  false, ARG_D, ARG_NONE, "sra", OP_TMP},
-{0x2b, 8, 0, 2,  false, ARG_E, ARG_NONE, "sra", OP_TMP},
-{0x2c, 8, 0, 2,  false, ARG_H, ARG_NONE, "sra", OP_TMP},
-{0x2d, 8, 0, 2,  false, ARG_L, ARG_NONE, "sra", OP_TMP},
+{0x28, 8, 0, 2,  false, ARG_B, ARG_NONE, "sra b", OP_SRA_REG},
+{0x29, 8, 0, 2,  false, ARG_C, ARG_NONE, "sra c", OP_SRA_REG},
+{0x2a, 8, 0, 2,  false, ARG_D, ARG_NONE, "sra d", OP_SRA_REG},
+{0x2b, 8, 0, 2,  false, ARG_E, ARG_NONE, "sra e", OP_SRA_REG},
+{0x2c, 8, 0, 2,  false, ARG_H, ARG_NONE, "sra h", OP_SRA_REG},
+{0x2d, 8, 0, 2,  false, ARG_L, ARG_NONE, "sra l", OP_SRA_REG},
 {0x2e, 16, 0, 2,  false, ARG_IND_HL, ARG_NONE, "sra", OP_TMP},
-{0x2f, 8, 0, 2,  false, ARG_A, ARG_NONE, "sra", OP_TMP},
+{0x2f, 8, 0, 2,  false, ARG_A, ARG_NONE, "sra a", OP_SRA_REG},
 {0x30, 8, 0, 2,  false, ARG_B, ARG_NONE, "swap b", OP_SWAP_REG},
 {0x31, 8, 0, 2,  false, ARG_C, ARG_NONE, "swap c", OP_SWAP_REG},
 {0x32, 8, 0, 2,  false, ARG_D, ARG_NONE, "swap d", OP_SWAP_REG},

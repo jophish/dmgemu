@@ -46,7 +46,6 @@ int main(int argc, char **argv) {
   opcode op_store;
   int op;
   GLFWwindow *window = init_window(gb_emu_p);
-  GLFWwindow *tile_window = init_tile_window(gb_emu_p);
 
   double ns_per_cycle = 238.46998;
   uint8_t cycles_taken;
@@ -77,7 +76,6 @@ int main(int argc, char **argv) {
     if (step_gpu(gb_emu_p) == 1) {
       render(gb_emu_p, window);
       glfwPollEvents();
-      render_tileset(gb_emu_p, tile_window);
       long int time_taken = timer_end(timer2);
       time_taken = time_taken;
       //printf("%f fps\n", 1.0/(((float)time_taken)/((float)1000000000)));
