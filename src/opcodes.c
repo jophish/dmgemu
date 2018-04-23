@@ -926,6 +926,16 @@ int op_add_sp_8im(emu *gb_emu_p, uint8_t val) {
   return 0;
 }
 
+int op_ld_a_ind_c(emu *gb_emu_p) {
+  cpu *z80_p = &(gb_emu_p->z80);
+  uint16_t addr = HW_IO_REGS_START + z80_p->regs.c;
+  int val;
+  if ((val = read_8(gb_emu_p, addr)) < 0)
+    return val;
+  z80_p->regs.a = val;
+  return 0;
+}
+
 int op_daa(emu *gb_emu_p) {
   // not really sure if any of this is right.
   cpu *z80_p = &(gb_emu_p->z80);
@@ -1276,6 +1286,39 @@ int dispatch_op(emu *gb_emu_p, opcode *op_p) {
     new_pc = read_16(gb_emu_p, pc+1);
     set_SP(z80_p, sp - 2);
     break;
+  case (OP_CALL_Z_16IM):
+    if (get_flag_Z(z80_p) == 0)
+      break;
+    sp = get_SP(z80_p);
+    if ((err = write_8(gb_emu_p, sp-1, new_pc >> 8)) < 0)
+      return err;
+    if ((err = write_8(gb_emu_p, sp-2, (new_pc & 0x00FF))) < 0)
+      return err;
+    new_pc = read_16(gb_emu_p, pc+1);
+    set_SP(z80_p, sp - 2);
+    break;
+  case (OP_CALL_NC_16IM):
+    if (get_flag_C(z80_p) != 0)
+      break;
+    sp = get_SP(z80_p);
+    if ((err = write_8(gb_emu_p, sp-1, new_pc >> 8)) < 0)
+      return err;
+    if ((err = write_8(gb_emu_p, sp-2, (new_pc & 0x00FF))) < 0)
+      return err;
+    new_pc = read_16(gb_emu_p, pc+1);
+    set_SP(z80_p, sp - 2);
+    break;
+  case (OP_CALL_C_16IM):
+    if (get_flag_C(z80_p) == 0)
+      break;
+    sp = get_SP(z80_p);
+    if ((err = write_8(gb_emu_p, sp-1, new_pc >> 8)) < 0)
+      return err;
+    if ((err = write_8(gb_emu_p, sp-2, (new_pc & 0x00FF))) < 0)
+      return err;
+    new_pc = read_16(gb_emu_p, pc+1);
+    set_SP(z80_p, sp - 2);
+    break;
   case (OP_SUB_8IM):
     if ((err = op_sub_a_8im(gb_emu_p, read_8(gb_emu_p, pc+1))) < 0)
       return err;
@@ -1380,10 +1423,14 @@ int dispatch_op(emu *gb_emu_p, opcode *op_p) {
     if ((err = op_ldhl_8im(gb_emu_p, read_8(gb_emu_p, pc+1))) < 0)
       return err;
     break;
-    case (OP_SBC_8IM):
-      if ((err = op_sbc_a_8im(gb_emu_p, read_8(gb_emu_p, pc+1))) < 0)
-	return err;
-      break;
+  case (OP_SBC_8IM):
+    if ((err = op_sbc_a_8im(gb_emu_p, read_8(gb_emu_p, pc+1))) < 0)
+      return err;
+    break;
+  case (OP_LD_A_IND_C):
+    if ((err = op_ld_a_ind_c(gb_emu_p)) < 0)
+      return err;
+    break;
   default:
     return ERR_OP_INVALID_OR_NOT_IMPLEMENTED;
   }
