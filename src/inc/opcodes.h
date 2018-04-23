@@ -254,6 +254,7 @@ int op_push_qq(emu *gb_emu_p, int qq_code);
 int op_pop_qq(emu *gb_emu_p, int qq_code);
 int op_ldhl_8im(emu *gb_emu_p, uint8_t val);
 int op_ld_ind_16im_sp(emu *gb_emu_p, uint16_t addr);
+int op_ldhl_8im(emu *gb_emu_p, uint8_t val);
 
 // 8 Bit Arithmetic and Logical Operations
 int op_add_a_r1(emu *gb_emu_p, int reg_code);
@@ -306,6 +307,7 @@ int op_set_bit_ind_hl(emu *gb_emu_p, uint8_t bit);
 int op_set_bit_r1(emu *gb_emu_p, uint8_t bit, int reg_code);
 int op_rr_r1(emu *gb_emu_p, int reg_code);
 int op_rr_ind_hl(emu *gb_emu_p);
+
 int op_rra(emu *gb_emu_p);
 
 // CB Instructions

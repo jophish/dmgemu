@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <time.h>
 #include "cpu.h"
 #include "rom.h"
 #include "opcodes.h"
@@ -12,6 +13,19 @@
 #include "int.h"
 
 #include <GLFW/glfw3.h>
+
+struct timespec timer_start(){
+    struct timespec start_time;
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start_time);
+    return start_time;
+}
+
+long timer_end(struct timespec start_time){
+    struct timespec end_time;
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end_time);
+    long diffInNanos = (end_time.tv_sec - start_time.tv_sec) * (long)1e9 + (end_time.tv_nsec - start_time.tv_nsec);
+    return diffInNanos;
+}
 
 int main(int argc, char **argv) {
   if (argc == 1) {
@@ -32,6 +46,11 @@ int main(int argc, char **argv) {
   opcode op_store;
   int op;
   GLFWwindow *window = init_window(gb_emu_p);
+
+  double ns_per_cycle = 238.46998;
+  uint8_t cycles_taken;
+  struct timespec timer, timer2;
+  timer2 = timer_start();
   while (true) {
     //printf("Now executing instruction at address 0x%04x\n", get_PC(z80_p));
 #ifdef DEBUG
@@ -40,6 +59,8 @@ int main(int argc, char **argv) {
 	}
 #endif
 
+    
+    timer = timer_start();
     op = dispatch_op(gb_emu_p, &op_store);
     if (op == ERR_OP_INVALID_OR_NOT_IMPLEMENTED) {
       printf("Unimplemented op:\n");
@@ -55,8 +76,19 @@ int main(int argc, char **argv) {
     if (step_gpu(gb_emu_p) == 1) {
       render(gb_emu_p, window);
       glfwPollEvents();
+      
+      long int time_taken = timer_end(timer2);
+      time_taken = time_taken;
+      //printf("%f fps\n", 1.0/(((float)time_taken)/((float)1000000000)));
+      timer2 = timer_start();
   }
     handle_interrupts(gb_emu_p);
 
+    cycles_taken = z80_p->clk.prev_cpu_cycles;
+    long int cyc_ns_time = (long int)(cycles_taken*ns_per_cycle);
+    long int end;
+    while((end = timer_end(timer)) < cyc_ns_time*.7) {}
+    //printf("timer end: %ld, cycle time: %ld\n", end, cyc_ns_time);
   }
+
 }

@@ -73,14 +73,14 @@ typedef struct cpu_regs {
   bool ime;
 } cpu_regs;
 
-typedef struct clock {
+typedef struct z80_clock {
   unsigned long long m_cycles, cpu_cycles; // Global clock
   uint32_t prev_m_cycles, prev_cpu_cycles; // Keeps track of the number of cycles the previous inst took
-} clock;
+} z80_clock;
 
 typedef struct cpu {
   cpu_regs regs;
-  clock clk;
+  z80_clock clk;
 } cpu;
 
 // Initializes registers to default values for DMG

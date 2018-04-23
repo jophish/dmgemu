@@ -340,15 +340,9 @@ int op_or_a_r1(emu *gb_emu_p, int reg_code) {
   int err;
   if ((err = reg_code_to_pointer(z80_p, reg_code, &reg_p)) < 0)
     return err;
-
-  z80_p->regs.a = z80_p->regs.a | *reg_p;
-
-  reset_flag_C(z80_p);
-  reset_flag_H(z80_p);
-  reset_flag_N(z80_p);
-  (z80_p->regs.a == 0) ? set_flag_Z(z80_p) : reset_flag_Z(z80_p);
-  return 0;
+  return op_or_a_8im(gb_emu_p, *reg_p);
 }
+
 
 int op_or_a_8im(emu *gb_emu_p, uint8_t val) {
   cpu *z80_p = &(gb_emu_p->z80);
@@ -475,7 +469,8 @@ int op_pop_qq(emu *gb_emu_p, int qq_code) {
   if ((err = qq_to_reg_pair(z80_p, qq_code, &reg_pair_p)) < 0)
     return err;
   uint16_t sp = get_SP(z80_p);
-  *reg_pair_p = (qq_code == QQ_PAIR_CODE_AF) ? read_16(gb_emu_p, sp) & 0xfff0 : read_16(gb_emu_p, sp);
+  uint16_t val = read_16(gb_emu_p, sp);
+  *reg_pair_p = (qq_code == QQ_PAIR_CODE_AF) ? val & 0xFFF0 : val;
   set_SP(z80_p, sp + 2);
   return 0;
 }
@@ -511,6 +506,7 @@ int op_add_hl_ss(emu *gb_emu_p, int ss_code) {
   set_HL(z80_p, hl_val + *reg_pair_p);
   return 0;
 }
+
 
 int op_ld_r_ind_hl(emu *gb_emu_p, int reg_code) {
   cpu *z80_p = &(gb_emu_p->z80);
@@ -740,6 +736,7 @@ int op_srl_ind_hl(emu *gb_emu_p) {
   return 0;
 }
 
+
 int op_bit_num_r1(emu *gb_emu_p, uint8_t bit, int reg_code) {
   cpu *z80_p = &(gb_emu_p->z80);
   uint8_t *reg_p;
@@ -880,12 +877,6 @@ int op_ld_ind_16im_sp(emu *gb_emu_p, uint16_t addr) {
   return 0;
 }
 
-int op_ld_sp_hl(emu *gb_emu_p) {
-  cpu *z80_p = &(gb_emu_p->z80);
-  z80_p->regs.sp = z80_p->regs.hl;
-  return 0;
-}
-
 int op_ldhl_8im(emu *gb_emu_p, uint8_t val){
   cpu *z80_p = &(gb_emu_p->z80);
   int cval = byte_to_2c(val);
@@ -950,6 +941,12 @@ int op_daa(emu *gb_emu_p) {
 
   (z80_p->regs.a == 0) ? set_flag_Z(z80_p) : reset_flag_Z(z80_p);
   reset_flag_H(z80_p);
+  return 0;
+}
+
+int op_ld_sp_hl(emu *gb_emu_p) {
+  cpu *z80_p = &(gb_emu_p->z80);
+  set_SP(z80_p, get_HL(z80_p));
   return 0;
 }
 
