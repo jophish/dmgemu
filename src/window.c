@@ -12,6 +12,14 @@ GLFWwindow *init_window(emu *gb_emu_p) {
   return window;
 }
 
+GLFWwindow *init_tile_window(emu *gb_emu_p) {
+  glfwInit();
+  GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "tileset", NULL, NULL);
+  glfwMakeContextCurrent(window);
+  glfwSetWindowUserPointer(window, gb_emu_p);
+  return window;
+}
+
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
   emu *gb_emu_p = glfwGetWindowUserPointer(window);
   mmu *mmu_p = &(gb_emu_p->gb_mmu);
@@ -43,6 +51,7 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
 }
 
 void render(emu *gb_emu_p, GLFWwindow *window) {
+  glfwMakeContextCurrent(window);
   int width, height;
   gpu gb_gpu;
   if (gb_emu_p != NULL)
@@ -68,6 +77,33 @@ void render(emu *gb_emu_p, GLFWwindow *window) {
   glClear(GL_COLOR_BUFFER_BIT);
 
   glDrawPixels(WINDOW_WIDTH, WINDOW_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE, window_RGBData);
+
+  glfwSwapBuffers(window);
+
+  return;
+}
+
+void render_tileset(emu *gb_emu_p, GLFWwindow *window) {
+  glfwMakeContextCurrent(window);
+  int width, height;
+  gpu gb_gpu;
+  if (gb_emu_p != NULL)
+    gb_gpu = gb_emu_p->gb_gpu;
+  else
+    return;
+  uint8_t window_RGBData[8][8];
+    for (int i = 0; i < PX_PER_ROW; i++) {
+      for (int j = 0; j < PX_PER_ROW; j++) {
+	window_RGBData[i][j] = gb_gpu.tileset[0][i][j]*0x3F;
+      }
+    }
+
+  
+  glViewport(0, 0, 16*PX_PER_ROW, 16*PX_PER_ROW);
+  glfwGetFramebufferSize(window, &width, &height);
+  glClear(GL_COLOR_BUFFER_BIT);
+
+  glDrawPixels(8, 8, GL_RED, GL_UNSIGNED_BYTE, window_RGBData);
 
   glfwSwapBuffers(window);
 

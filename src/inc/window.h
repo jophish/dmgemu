@@ -9,8 +9,10 @@
 #define WINDOW_WIDTH LCD_WIDTH*PX_SIZE
 
 GLFWwindow *init_window(emu *gb_emu_p);
+GLFWwindow *init_tile_window(emu *gb_emu_p);
 
 void render(emu *gb_emu_p, GLFWwindow *window);
+void render_tileset(emu *gb_emu_p, GLFWwindow *window);
 
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
 

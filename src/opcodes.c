@@ -496,13 +496,17 @@ int op_add_hl_ss(emu *gb_emu_p, int ss_code) {
   int err;
   if ((err = ss_to_reg_pair(z80_p, ss_code, &reg_pair_p)) < 0)
     return err;
+  uint16_t res = hl_val + *reg_pair_p;
   reset_flag_H(z80_p);
   // set H flag if carry from bit 11
-  ((((hl_val & 0xFFF) + (*reg_pair_p & 0xFFF)) & 0x1000) == 0x1000) ? set_flag_H(z80_p) : reset_flag_H(z80_p);
-  // set C flag if carry from bit 15
-  (((hl_val + *reg_pair_p) & 0x10000) == 0x10000) ? set_flag_C(z80_p) : reset_flag_C(z80_p);
-
-  set_HL(z80_p, hl_val + *reg_pair_p);
+  if (((hl_val ^ *reg_pair_p ^ res) & 0x1000) != 0x00 ) {
+      set_flag_H(z80_p);
+    } else {
+    reset_flag_H(z80_p);
+  }
+  // set carry flag
+  (res < hl_val) ? set_flag_C(z80_p) : reset_flag_C(z80_p);
+  set_HL(z80_p, res);
   return 0;
 }
 
