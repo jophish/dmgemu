@@ -471,6 +471,8 @@ bool hit_breakpoint(cpu *z80_p, debugger *dbg_p) {
 }
 
 bool check_breakpoint(debugger *dbg_p, uint16_t addr) {
+  if (!addr)
+    return false;
   for (int i = 0; i < MAX_BREAKPOINTS; i++) {
     if (dbg_p->breakpoints[i] == addr) {
       return true;

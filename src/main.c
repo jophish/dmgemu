@@ -79,7 +79,8 @@ int main(int argc, char **argv) {
       glfwPollEvents();
       render_tileset(gb_emu_p, tile_window);
       long int time_taken = timer_end(timer2);
-      printf("%f fps\n", 1.0/(((float)time_taken)/((float)1000000000)));
+      time_taken = time_taken;
+      //printf("%f fps\n", 1.0/(((float)time_taken)/((float)1000000000)));
       timer2 = timer_start();
   }
     handle_interrupts(gb_emu_p);
