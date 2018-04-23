@@ -17,7 +17,7 @@ int handle_interrupts(emu *gb_emu_p) {
   if (int_and_val == 0)
     return 0;
 
-  
+
   uint16_t int_vector = 0;
 
   // Find the interrupt to service
@@ -25,6 +25,8 @@ int handle_interrupts(emu *gb_emu_p) {
     write_8(gb_emu_p, REG_IF, if_val & ~(INT_V_BLANK));
     int_vector = INT_ADDR_V_BLANK;
   } else if ((int_and_val & INT_LCDC) != 0) {
+    write_8(gb_emu_p, REG_IF, if_val & ~(INT_LCDC));
+    int_vector = INT_ADDR_LCDC;
   } else if ((int_and_val & INT_TIMER) != 0) {
     write_8(gb_emu_p, REG_IF, if_val & ~(INT_TIMER));
     int_vector = INT_ADDR_TIMER;

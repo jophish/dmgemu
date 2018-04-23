@@ -81,7 +81,8 @@ int read_8(emu *gb_emu_p, mem_addr addr) {
       buf_offset = addr - INTERNAL_RAM_0_START;
       return gb_emu_p->gb_mmu.ram[buf_offset];
     case (REGION_ECHO_RAM) :
-      break;
+      buf_offset = addr - ECHO_RAM_START;
+      return gb_emu_p->gb_mmu.ram[buf_offset];
     case (REGION_OAM) :
       buf_offset = addr - OAM_START;
       return gb_emu_p->gb_mmu.ram[buf_offset];
@@ -166,6 +167,9 @@ int write_8(emu *gb_emu_p, mem_addr addr, uint8_t val) {
       gb_emu_p->gb_mmu.ram[buf_offset] = val;
       break;
     case (REGION_ECHO_RAM) :
+      ;
+      buf_offset = addr - ECHO_RAM_START;
+      gb_emu_p->gb_mmu.ram[buf_offset] = val;
       break;
     case (REGION_OAM) :
       // write to actual OAM buf, but also update sprite list in GPU. write_oam accomplishes both

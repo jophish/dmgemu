@@ -23,16 +23,22 @@ int step_gpu(emu *gb_emu_p) {
 	  gb_gpu_p->mode = 1;
 	  // set V-Blank interrupt request
 	  gb_mmu_p->hw_io_regs[REG_IF-HW_IO_REGS_START] |= INT_V_BLANK;
+	  if (gb_gpu_p->gb_gpu_regs.reg_stat & 0x10)
+	    gb_mmu_p->hw_io_regs[REG_IF-HW_IO_REGS_START] |= INT_LCDC;
 
 	  // Return a 1 to indicate a screen render is required
 	  if ((gb_gpu_p->gb_gpu_regs.reg_lcdc & 0b10000000) != 0)
 	    return_val = 1;
 	} else {
 	  gb_gpu_p->mode = 2;
+	  if (gb_gpu_p->gb_gpu_regs.reg_stat & 0x20)
+	    gb_mmu_p->hw_io_regs[REG_IF-HW_IO_REGS_START] |= INT_LCDC;
 	}
 
 	gb_gpu_p->gpu_clock = 0;
 	gb_gpu_p->gb_gpu_regs.reg_ly++;
+	if ((gb_gpu_p->gb_gpu_regs.reg_ly == gb_gpu_p->gb_gpu_regs.reg_lyc) && (gb_gpu_p->gb_gpu_regs.reg_stat & 0x40))
+	    gb_mmu_p->hw_io_regs[REG_IF-HW_IO_REGS_START] |= INT_LCDC;
       }
       break;
     // V-Blank period
@@ -40,9 +46,15 @@ int step_gpu(emu *gb_emu_p) {
       if (gb_gpu_p->gpu_clock >= 456) {
 	gb_gpu_p->gpu_clock = 0;
 	gb_gpu_p->gb_gpu_regs.reg_ly++;
+	if ((gb_gpu_p->gb_gpu_regs.reg_ly == gb_gpu_p->gb_gpu_regs.reg_lyc) && (gb_gpu_p->gb_gpu_regs.reg_stat & 0x40))
+	    gb_mmu_p->hw_io_regs[REG_IF-HW_IO_REGS_START] |= INT_LCDC;
 	if (gb_gpu_p->gb_gpu_regs.reg_ly > 153) {
 	  gb_gpu_p->gb_gpu_regs.reg_ly = 0;
+	  if ((gb_gpu_p->gb_gpu_regs.reg_ly == gb_gpu_p->gb_gpu_regs.reg_lyc) && (gb_gpu_p->gb_gpu_regs.reg_stat & 0x40))
+	    gb_mmu_p->hw_io_regs[REG_IF-HW_IO_REGS_START] |= INT_LCDC;
 	  gb_gpu_p->mode = 2;
+	  if (gb_gpu_p->gb_gpu_regs.reg_stat & 0x20)
+	    gb_mmu_p->hw_io_regs[REG_IF-HW_IO_REGS_START] |= INT_LCDC;
 	}
       }
       break;
@@ -58,6 +70,8 @@ int step_gpu(emu *gb_emu_p) {
       if (gb_gpu_p->gpu_clock >= 172) {
 	gb_gpu_p->gpu_clock = 0;
 	gb_gpu_p->mode = 0;
+	if (gb_gpu_p->gb_gpu_regs.reg_stat & 0x08)
+	    gb_mmu_p->hw_io_regs[REG_IF-HW_IO_REGS_START] |= INT_LCDC;
 	// We should eventually write a scanline to the framebuffer here
 	if ((gb_gpu_p->gb_gpu_regs.reg_lcdc & 0b10000000) != 0)
 	  draw_scanline(gb_emu_p);
