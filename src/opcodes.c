@@ -1090,6 +1090,7 @@ int dispatch_op(emu *gb_emu_p, opcode *op_p) {
   if (z80_p->regs.ei_enable) {
     z80_p->regs.ei_cycle_count += z80_p->clk.prev_m_cycles;
     if (z80_p->regs.ei_cycle_count > 4) {
+      printf("here!\n");
       z80_p->regs.ei_enable = false;
       z80_p->regs.ei_cycle_count = 0;
       set_flag_IME(z80_p);
