@@ -134,7 +134,6 @@ int draw_scanline(emu *gb_emu_p) {
       for (int j = 0; j <= (coord_x_hi - coord_x_lo); j++) {
 	oam_update_entry tmp_px = pixels_to_write[pixel_count];
 	tmp_px.line_x = px_lo + j;
-	//printf("line_x: %d\n", tmp_px.line_x);
 	tmp_px.obj_no = i;
 	tmp_px.oam_x_coord = sprite.x_pos;
 	y_index = sprite.y_flip ? (sprite_h - 1 - coord_y) : (coord_y);
