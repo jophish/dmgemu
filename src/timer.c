@@ -64,7 +64,7 @@ int update_timer(emu *gb_emu_p) {
     gb_timer_p->gb_timer_regs.reg_div += 1;
 
   // If timer is stopped (look at TAC), return
-  if (gb_timer_p->gb_timer_regs.reg_tac & 0x08)
+  if ((gb_timer_p->gb_timer_regs.reg_tac & 0x04) == 0)
     return 0;
   uint16_t timer_max = TIMER_COUNTS[gb_timer_p->gb_timer_regs.reg_tac & 0x3];
   // increment timer count from internal clock
