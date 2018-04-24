@@ -139,6 +139,7 @@ int draw_scanline(emu *gb_emu_p) {
 	tmp_px.oam_x_coord = sprite.x_pos;
 	x_index = sprite.y_flip ? (PX_PER_ROW - 1 - (coord_x_lo + i)) : (coord_x_lo + j);
 	y_index = sprite.x_flip ? (sprite_h - 1 - coord_y) : (coord_y);
+
 	uint8_t sprite_px = gb_gpu_p->tileset[sprite.tile_no][y_index][x_index];
 	tmp_px.px_col = translate_palette_px(palette, sprite_px);
 	tmp_px.priority = sprite.priority;

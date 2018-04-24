@@ -33,41 +33,41 @@ int main(int argc, char **argv) {
     exit(-1);
   }
 
-  emu gb_emu;
-  emu *gb_emu_p = &gb_emu;
-
-  cpu *z80_p = &(gb_emu.z80);
-  rom *gb_rom_p = &(gb_emu.gb_rom);
-  init_emu(gb_emu_p);
-
-  load_rom(gb_rom_p, argv[1]);
-
-  set_PC(z80_p, 0x100);
-
   opcode op_store;
   int op;
-  GLFWwindow *window = init_window(gb_emu_p);
+  emu gb_emu;
 
+  emu *gb_emu_p = &gb_emu;
+  cpu *z80_p = &(gb_emu.z80);
+  rom *gb_rom_p = &(gb_emu.gb_rom);
+
+  // Initializing emu stuff
+  init_emu(gb_emu_p);
+  load_rom(gb_rom_p, argv[1]);
+  set_PC(z80_p, 0x100);
+
+  // Setting up windows and timers
+  GLFWwindow *window = init_window(gb_emu_p);
   double ns_per_cycle = 238.46998;
   uint8_t cycles_taken;
   struct timespec timer, timer2;
   timer2 = timer_start();
 
   while (true) {
-    //printf("Now executing instruction at address 0x%04x\n", get_PC(z80_p));
+
 #ifdef DEBUG
     if(debug_prompt(gb_emu_p) == ERR_READ_LINE) {
       exit(0);
-	}
+    }
 #endif
 
     timer = timer_start();
     if (z80_p->halt == false) {
       op = dispatch_op(gb_emu_p, &op_store);
       if (op == ERR_OP_INVALID_OR_NOT_IMPLEMENTED) {
-      printf("Unimplemented op:\n");
-      show_inst_at_addr(gb_emu_p, get_PC(z80_p), NULL);
-      exit(0);
+	printf("Unimplemented op:\n");
+	show_inst_at_addr(gb_emu_p, get_PC(z80_p), NULL);
+	exit(0);
       }
       if (op == ERR_INVALID_ADDRESS) {
 	printf("Invalid address in op (pc: 0x%04x)\n", get_PC(z80_p));
@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
 	exit(0);
       }
     } else {
-      // if we've halted, just step the clock and nothing else
+      // if we've halted, just tick up the clock until something breaks us out of halt
       z80_p->clk.prev_cpu_cycles = 4;
       z80_p->clk.prev_m_cycles = 1;
       z80_p->clk.cpu_cycles += 4;
@@ -87,19 +87,15 @@ int main(int argc, char **argv) {
       render(gb_emu_p, window);
       glfwPollEvents();
       long int time_taken = timer_end(timer2);
-      time_taken = time_taken;
-      //printf("%f fps\n", 1.0/(((float)time_taken)/((float)1000000000)));
-      timer2 = timer_start();
     }
 
     update_timer(gb_emu_p);
     handle_interrupts(gb_emu_p);
 
+    // For now, we just spin in order to get a decently correct framerate
     cycles_taken = z80_p->clk.prev_cpu_cycles;
     long int cyc_ns_time = (long int)(cycles_taken*ns_per_cycle);
     long int end;
     while((end = timer_end(timer)) < cyc_ns_time*.7) {}
-    //printf("timer end: %ld, cycle time: %ld\n", end, cyc_ns_time);
   }
-
 }
