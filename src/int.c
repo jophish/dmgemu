@@ -11,8 +11,9 @@ int handle_interrupts(emu *gb_emu_p) {
   uint8_t int_and_val = if_val & ie_val;
 
   // If an interrupt is requested and enabled, get us out of HALT mode
-  if (int_and_val && z80_p->halt) {
+  if (int_and_val) {
     z80_p->halt = false;
+    z80_p->stop = false;
   }
 
   // If IME isn't set, we don't have to do anything

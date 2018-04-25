@@ -11,6 +11,7 @@ void init_cpu(cpu *z80) {
   set_PC(z80, 0x0100);
   set_flag_IME(z80);
   z80->halt = false;
+  z80->stop = false;
   z80->regs.ei_enable = false;
 }
 
@@ -29,6 +30,8 @@ void print_regs(cpu *z80, bool width) {
   printf("SP: 0x%04x\n", get_SP(z80));
   printf("PC: 0x%04x\n", get_PC(z80));
   printf("IME: %s\n", z80->regs.ime ? "true" : "false");
+  printf("HALT: %s\n", z80->halt ? "true" : "false");
+  printf("STOP: %s\n", z80->stop ? "true" : "false");
 }
 
 void print_flags(cpu *z80) {

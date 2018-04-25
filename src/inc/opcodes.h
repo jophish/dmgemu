@@ -217,6 +217,12 @@ enum op_type {
   OP_RL_REG,
   OP_SRA_REG,
   OP_HALT,
+  OP_STOP,
+  OP_RLC_IND_HL,
+  OP_RRC_IND_HL,
+  OP_RL_IND_HL,
+  OP_SLA_IND_HL,
+  OP_SRA_IND_HL,
 };
 
 typedef struct opcode {
@@ -312,7 +318,6 @@ int op_bit_num_r1(emu *gb_emu_p, uint8_t bit, int reg_code);
 int op_bit_num_ind_hl(emu *gb_emu_p, uint8_t bit);
 int op_res_bit_r1(emu *gb_emu_p, uint8_t bit, int reg_code);
 int op_res_bit_ind_hl(emu *gb_emu_p, uint8_t bit);
-int op_sla_r1(emu *gb_emu_p, int reg_code);
 int op_set_bit_ind_hl(emu *gb_emu_p, uint8_t bit);
 int op_set_bit_r1(emu *gb_emu_p, uint8_t bit, int reg_code);
 
@@ -328,17 +333,24 @@ int op_srl_ind_hl(emu *gb_emu_p);
 int op_rla(emu *gb_emu_p);
 int op_rrca(emu *gb_emu_p);
 int op_rlca(emu *gb_emu_p);
-int op_rr_r1(emu *gb_emu_p, int reg_code);
 int op_rl_r1(emu *gb_emu_p, int reg_code);
+int op_rl_ind_hl(emu *gb_emu_p);
+int op_rr_r1(emu *gb_emu_p, int reg_code);
 int op_rr_ind_hl(emu *gb_emu_p);
 int op_rra(emu *gb_emu_p);
 int op_rlc_r1(emu *gb_emu_p, int reg_code);
+int op_rlc_ind_hl(emu *gb_emu_p);
 int op_rrc_r1(emu *gb_emu_p, int reg_code);
+int op_rrc_ind_hl(emu *gb_emu_p);
 int op_sra_r1(emu *gb_emu_p, int reg_code);
+int op_sra_ind_hl(emu *gb_emu_p);
+int op_sla_r1(emu *gb_emu_p, int reg_code);
+int op_sla_ind_hl(emu *gb_emu_p);
 
 int op_daa(emu *gb_emu_p);
 
 int op_halt(emu *gb_emu_p);
+int op_stop(emu *gb_emu_p);
 
 // Given an argument, determines whether or not the mnemonic requires
 // arguments based off of bytes following the opcode.
@@ -407,7 +419,7 @@ static const opcode op_array[256] = {
 {0xd, 4, 0, 1,  false, ARG_C, ARG_NONE, "dec c", OP_DEC_REG},
 {0xe, 8, 0, 2,  false, ARG_C, ARG_D8, "ld c, 0x%02x", OP_LD_REG_8IM},
 {0xf, 4, 0, 1,  false, ARG_NONE, ARG_NONE, "rrca", OP_RRCA},
-{0x10, 4, 0, 2,  false, ARG_0, ARG_NONE, "stop 0", OP_TMP},
+{0x10, 4, 0, 2,  false, ARG_0, ARG_NONE, "stop 0", OP_STOP},
 {0x11, 12, 0, 3,  false, ARG_DE, ARG_D16, "ld de, 0x%04x", OP_LD_DD_16IM},
 {0x12, 8, 0, 1,  false, ARG_IND_DE, ARG_A, "ld (de), a", OP_LD_IND_DE_A},
 {0x13, 8, 0, 1,  false, ARG_DE, ARG_NONE, "inc de", OP_INC_SS},
@@ -656,7 +668,7 @@ static const opcode cb_op_array[256] = {
 {0x3, 8, 0, 2,  false, ARG_E, ARG_NONE, "rlc e", OP_RLC_REG},
 {0x4, 8, 0, 2,  false, ARG_H, ARG_NONE, "rlc h", OP_RLC_REG},
 {0x5, 8, 0, 2,  false, ARG_L, ARG_NONE, "rlc l", OP_RLC_REG},
-{0x6, 16, 0, 2,  false, ARG_IND_HL, ARG_NONE, "rlc", OP_TMP},
+{0x6, 16, 0, 2,  false, ARG_IND_HL, ARG_NONE, "rlc (hl)", OP_RLC_IND_HL},
 {0x7, 8, 0, 2,  false, ARG_A, ARG_NONE, "rlc a", OP_RLC_REG},
 {0x8, 8, 0, 2,  false, ARG_B, ARG_NONE, "rrc b", OP_RRC_REG},
 {0x9, 8, 0, 2,  false, ARG_C, ARG_NONE, "rrc c", OP_RRC_REG},
@@ -664,7 +676,7 @@ static const opcode cb_op_array[256] = {
 {0xb, 8, 0, 2,  false, ARG_E, ARG_NONE, "rrc e", OP_RRC_REG},
 {0xc, 8, 0, 2,  false, ARG_H, ARG_NONE, "rrc h", OP_RRC_REG},
 {0xd, 8, 0, 2,  false, ARG_L, ARG_NONE, "rrc l", OP_RRC_REG},
-{0xe, 16, 0, 2,  false, ARG_IND_HL, ARG_NONE, "rrc", OP_TMP},
+{0xe, 16, 0, 2,  false, ARG_IND_HL, ARG_NONE, "rrc (hl)", OP_RRC_IND_HL},
 {0xf, 8, 0, 2,  false, ARG_A, ARG_NONE, "rrc a", OP_RRC_REG},
 {0x10, 8, 0, 2,  false, ARG_B, ARG_NONE, "rl b", OP_RL_REG},
 {0x11, 8, 0, 2,  false, ARG_C, ARG_NONE, "rl c", OP_RL_REG},
@@ -672,7 +684,7 @@ static const opcode cb_op_array[256] = {
 {0x13, 8, 0, 2,  false, ARG_E, ARG_NONE, "rl e", OP_RL_REG},
 {0x14, 8, 0, 2,  false, ARG_H, ARG_NONE, "rl h", OP_RL_REG},
 {0x15, 8, 0, 2,  false, ARG_L, ARG_NONE, "rl l", OP_RL_REG},
-{0x16, 16, 0, 2,  false, ARG_IND_HL, ARG_NONE, "rl", OP_TMP},
+{0x16, 16, 0, 2,  false, ARG_IND_HL, ARG_NONE, "rl (hl)", OP_RL_IND_HL},
 {0x17, 8, 0, 2,  false, ARG_A, ARG_NONE, "rl a", OP_RL_REG},
 {0x18, 8, 0, 2,  false, ARG_B, ARG_NONE, "rr b", OP_RR_REG},
 {0x19, 8, 0, 2,  false, ARG_C, ARG_NONE, "rr c", OP_RR_REG},
@@ -688,7 +700,7 @@ static const opcode cb_op_array[256] = {
 {0x23, 8, 0, 2,  false, ARG_E, ARG_NONE, "sla e", OP_SLA_REG},
 {0x24, 8, 0, 2,  false, ARG_H, ARG_NONE, "sla h", OP_SLA_REG},
 {0x25, 8, 0, 2,  false, ARG_L, ARG_NONE, "sla l", OP_SLA_REG},
-{0x26, 16, 0, 2,  false, ARG_IND_HL, ARG_NONE, "sla", OP_TMP},
+{0x26, 16, 0, 2,  false, ARG_IND_HL, ARG_NONE, "sla (hl)", OP_SLA_IND_HL},
 {0x27, 8, 0, 2,  false, ARG_A, ARG_NONE, "sla a", OP_SLA_REG},
 {0x28, 8, 0, 2,  false, ARG_B, ARG_NONE, "sra b", OP_SRA_REG},
 {0x29, 8, 0, 2,  false, ARG_C, ARG_NONE, "sra c", OP_SRA_REG},
@@ -696,7 +708,7 @@ static const opcode cb_op_array[256] = {
 {0x2b, 8, 0, 2,  false, ARG_E, ARG_NONE, "sra e", OP_SRA_REG},
 {0x2c, 8, 0, 2,  false, ARG_H, ARG_NONE, "sra h", OP_SRA_REG},
 {0x2d, 8, 0, 2,  false, ARG_L, ARG_NONE, "sra l", OP_SRA_REG},
-{0x2e, 16, 0, 2,  false, ARG_IND_HL, ARG_NONE, "sra", OP_TMP},
+{0x2e, 16, 0, 2,  false, ARG_IND_HL, ARG_NONE, "sra (hl)", OP_SRA_IND_HL},
 {0x2f, 8, 0, 2,  false, ARG_A, ARG_NONE, "sra a", OP_SRA_REG},
 {0x30, 8, 0, 2,  false, ARG_B, ARG_NONE, "swap b", OP_SWAP_REG},
 {0x31, 8, 0, 2,  false, ARG_C, ARG_NONE, "swap c", OP_SWAP_REG},

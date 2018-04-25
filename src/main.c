@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
 #endif
 
     timer = timer_start();
-    if (z80_p->halt == false) {
+    if (!z80_p->halt && !z80_p->stop ) {
       op = dispatch_op(gb_emu_p, &op_store);
       if (op == ERR_OP_INVALID_OR_NOT_IMPLEMENTED) {
 	printf("Unimplemented op:\n");

@@ -84,6 +84,7 @@ typedef struct cpu {
   cpu_regs regs;
   z80_clock clk;
   bool halt;
+  bool stop;
 } cpu;
 
 // Initializes registers to default values for DMG
