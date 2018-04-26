@@ -98,7 +98,7 @@ int draw_scanline(emu *gb_emu_p) {
   }
 
   // Take care of sprites
-  if (gb_gpu_p->gb_gpu_regs.reg_lcdc & 0x2) {
+  if ((gb_gpu_p->gb_gpu_regs.reg_lcdc & 0x2)) {
 
     // Check LCDC to see if sprites are 8x8 or 8x16
     uint8_t sprite_h = gb_gpu_p->gb_gpu_regs.reg_lcdc & 0x4 ? 16 : 8;
@@ -122,7 +122,7 @@ int draw_scanline(emu *gb_emu_p) {
       uint16_t px_hi = imin(LCD_WIDTH - 1, sprite.x_pos - 1);
 
       // No intersections with our scanline, continue
-      if (!((coord_x_lo <= coord_x_hi) && (px_lo <= px_hi) && (coord_y >= 0) && (coord_y < sprite_h))) {
+      if (!((coord_x_lo <= coord_x_hi) && (coord_x_hi < LCD_WIDTH) && (px_lo <= px_hi) && (coord_y >= 0) && (coord_y < sprite_h))) {
 	continue;
       }
 
@@ -131,6 +131,7 @@ int draw_scanline(emu *gb_emu_p) {
       // Indices into the tile to grab the pixel. We might have X/Y flips so we have to do some computation
       uint8_t x_index, y_index;
       uint8_t palette = (sprite.palette_no) ? gb_gpu_p->gb_gpu_regs.reg_obp1 : gb_gpu_p->gb_gpu_regs.reg_obp0;
+
       for (int j = 0; j <= (coord_x_hi - coord_x_lo); j++) {
 	oam_update_entry tmp_px = pixels_to_write[pixel_count];
 	tmp_px.line_x = px_lo + j;
@@ -171,12 +172,11 @@ int coord_to_bg_pixel(emu *gb_emu_p, uint16_t x, uint16_t y) {
 
   // Get the correct location
   if ((lcdc_val & BG_CODE_AREA_SELECT_FLAG) == 0)
-     map_data_st_addr = BG_MAP_DATA_1_START;
+    map_data_st_addr = BG_MAP_DATA_1_START;
   else
     map_data_st_addr = BG_MAP_DATA_2_START;
 
   uint8_t tile_index = read_8(gb_emu_p, map_data_st_addr + tile_no);
-
 
   //printf("tile no: 0x%02x\n", tile_no);
   //printf("tile index: 0x%02x\n", tile_index);

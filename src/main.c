@@ -48,6 +48,7 @@ int main(int argc, char **argv) {
 
   // Setting up windows and timers
   GLFWwindow *window = init_window(gb_emu_p);
+  //GLFWwindow *window2 = init_tile_window(gb_emu_p);
   double ns_per_cycle = 238.46998;
   uint8_t cycles_taken;
   struct timespec timer;
@@ -83,6 +84,7 @@ int main(int argc, char **argv) {
     }
 
     if (step_gpu(gb_emu_p) == 1) {
+      //render_tileset(gb_emu_p, window2);
       render(gb_emu_p, window);
       glfwPollEvents();
     }

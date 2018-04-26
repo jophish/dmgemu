@@ -2,6 +2,7 @@
 #define UTIL_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define DD_MASK 0b00110000
 #define SS_MASK 0b00110000
@@ -41,5 +42,9 @@ int imax(int a, int b);
 
 // Min of two unsigned ints
 int imin(int a, int b);
+
+// Given an N x M array of uint8_t's, returns a resized array of N_1 x N_2
+int resize_array(uint16_t old_w, uint16_t old_h, uint16_t new_w, uint16_t new_h, uint8_t array[old_h][old_w], uint8_t resized_array[new_h][new_w], bool flip);
+
 
 #endif /* UTIL_H */
