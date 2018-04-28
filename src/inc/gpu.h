@@ -124,4 +124,6 @@ int tile_data_to_px(uint8_t *tile_data_p, uint8_t px_num);
 // and updates the sprites buffer in the GPU appropriately
 int write_oam(emu *gb_emu_p, uint16_t addr, uint8_t val);
 
+// Given
+int get_tileset(int tiles_per_row, uint8_t tileset_array[][tiles_per_row*PX_PER_ROW]);
 #endif /* GPU_H */

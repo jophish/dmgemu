@@ -63,7 +63,7 @@ void render(emu *gb_emu_p, GLFWwindow *window) {
   else
     return;
 
-  uint8_t pal[4][3]= {{0xFF, 0xE0, 0xC0},
+  uint8_t pal[4][3]= {{0xFF, 0xFF, 0xFF},
 		      {0xAA, 0xAA, 0xAA},
 		      {0x55, 0x55, 0x55},
 		      {0x00, 0x00, 0x00}};
@@ -94,24 +94,6 @@ void render_tileset(emu *gb_emu_p, GLFWwindow *window) {
   else
     return;
 
-  uint8_t pal[4][3]= {{0xFF, 0xFF, 0xFF},
-		      {0xAA, 0xAA, 0xAA},
-		      {0x55, 0x55, 0x55},
-		      {0x00, 0x00, 0x00}};
-
-  uint8_t window_RGBData[WINDOW_HEIGHT][WINDOW_WIDTH];
-  resize_array(LCD_WIDTH, LCD_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT, gb_gpu.framebuffer, window_RGBData, true);
-  uint8_t glfw_array[WINDOW_HEIGHT][3*WINDOW_WIDTH];
-  array_to_glfw_rgb(WINDOW_WIDTH, WINDOW_HEIGHT, window_RGBData, glfw_array, pal);
-
-  glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-  glfwGetFramebufferSize(window, &width, &height);
-  glClear(GL_COLOR_BUFFER_BIT);
-
-  glDrawPixels(WINDOW_WIDTH, WINDOW_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE, glfw_array);
-
-  else
-    return;
   uint8_t TILES_PER_ROW = 20;
   uint8_t window_RGBData[8*TILES_PER_ROW][8*TILES_PER_ROW];
   for (int k = 0; k < 192; k++) {

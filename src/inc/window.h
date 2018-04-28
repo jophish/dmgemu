@@ -4,7 +4,7 @@
 #include "gpu.h"
 #include "emu.h"
 
-#define PX_SIZE 3
+#define PX_SIZE 4
 #define WINDOW_HEIGHT LCD_HEIGHT*PX_SIZE
 #define WINDOW_WIDTH LCD_WIDTH*PX_SIZE
 
