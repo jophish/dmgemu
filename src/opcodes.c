@@ -1305,7 +1305,6 @@ int dispatch_op(emu *gb_emu_p, opcode *op_p) {
     // EI actually disables interrupts for one instruction, then enables them
     // just before the next instruction is dispatched
     ;
-    printf("EI!\n");
     z80_p->regs.ei_enable = true;
     z80_p->regs.ei_cycle_count = 0;
     reset_flag_IME(z80_p);

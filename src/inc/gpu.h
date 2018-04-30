@@ -15,8 +15,8 @@
 #define BG_BLOCKS_PER_ROW 32
 
 // Masks for flag selection
-#define BG_CODE_AREA_SELECT_FLAG 0b1000
-#define BG_CHAR_DATA_SELECT_FLAG 0b10000
+#define BG_CODE_AREA_SELECT_FLAG 0x08
+#define BG_CHAR_DATA_SELECT_FLAG 0x10
 
 // Tile size
 #define TILE_SIZE 0x10
@@ -24,6 +24,8 @@
 // Pixels per tile
 #define PX_PER_TILE 64
 #define PX_PER_ROW 8
+
+#define NUM_TILES SZ_CHAR_RAM/TILE_SIZE
 
 // Size of OAM sprite attribute entry
 #define SPRITE_SIZE 0x4
@@ -38,7 +40,6 @@
 
 // Forward declaration of emu
 typedef struct emu emu;
-
 
 typedef struct gpu_regs {
   uint8_t reg_lcdc,
@@ -124,6 +125,12 @@ int tile_data_to_px(uint8_t *tile_data_p, uint8_t px_num);
 // and updates the sprites buffer in the GPU appropriately
 int write_oam(emu *gb_emu_p, uint16_t addr, uint8_t val);
 
-// Given
-int get_tileset(int tiles_per_row, uint8_t tileset_array[][tiles_per_row*PX_PER_ROW]);
+// Given the number of desired tiles per row, fills in width and height with
+// the correct values for an array of all tiles in the tileset
+int get_tileset_array_size(int tiles_per_row, int *width, int *height);
+
+// Given the number of desired tiles per row, returns an array of all tiles.
+// The array must have dimensions as returned by get_tileset_array_size(
+int get_tileset(emu *gb_emu_p, int tiles_per_row, int width, int height, uint8_t tileset_array[height][width]);
+
 #endif /* GPU_H */

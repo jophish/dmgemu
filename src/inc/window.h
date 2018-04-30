@@ -4,10 +4,11 @@
 #include "gpu.h"
 #include "emu.h"
 
-#define PX_SIZE 4
+#define PX_SIZE 3
 #define WINDOW_HEIGHT LCD_HEIGHT*PX_SIZE
 #define WINDOW_WIDTH LCD_WIDTH*PX_SIZE
 
+#define TILESET_SCALE 3
 // A pallette consists of four RGB colors, represented by four three-byte values, where each byte
 // corresponds to the R, G, B components respectively. These four colors in turn represent hues
 // on the Gameboy LCD, from light to dark.

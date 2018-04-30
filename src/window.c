@@ -15,8 +15,13 @@ GLFWwindow *init_window(emu *gb_emu_p) {
 }
 
 GLFWwindow *init_tile_window(emu *gb_emu_p) {
+  int width, height;
+  uint8_t TILES_PER_ROW = 20;
+  get_tileset_array_size(TILES_PER_ROW, &width, &height);
   glfwInit();
-  GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "tileset", NULL, NULL);
+  width = width*TILESET_SCALE;
+  height = height*TILESET_SCALE;
+  GLFWwindow* window = glfwCreateWindow(width, height, "tileset", NULL, NULL);
   glfwMakeContextCurrent(window);
   glfwSetWindowUserPointer(window, gb_emu_p);
   return window;
@@ -88,27 +93,26 @@ void render(emu *gb_emu_p, GLFWwindow *window) {
 void render_tileset(emu *gb_emu_p, GLFWwindow *window) {
   glfwMakeContextCurrent(window);
   int width, height;
-  gpu gb_gpu;
-  if (gb_emu_p != NULL)
-    gb_gpu = gb_emu_p->gb_gpu;
-  else
-    return;
 
-  uint8_t TILES_PER_ROW = 20;
-  uint8_t window_RGBData[8*TILES_PER_ROW][8*TILES_PER_ROW];
-  for (int k = 0; k < 192; k++) {
-    for (int i = 0; i < PX_PER_ROW; i++) {
-      for (int j = 0; j < PX_PER_ROW; j++) {
-	window_RGBData[PX_PER_ROW*(k / TILES_PER_ROW) + i][PX_PER_ROW*(k % TILES_PER_ROW) + j] = gb_gpu.tileset[k][i][j]*0x3F;
-      }
-    }
-  }
 
-  glViewport(0, 0, 8*TILES_PER_ROW, 8*TILES_PER_ROW);
+  uint8_t pal[4][3]= {{0xFF, 0xFF, 0xFF},
+		      {0xAA, 0xAA, 0xAA},
+		      {0x55, 0x55, 0x55},
+		      {0x00, 0x00, 0x00}};
+
   glfwGetFramebufferSize(window, &width, &height);
+  uint8_t tmp_array[height/TILESET_SCALE][width/TILESET_SCALE];
+  get_tileset(gb_emu_p, width/(PX_PER_ROW*TILESET_SCALE), width/TILESET_SCALE, height/TILESET_SCALE, tmp_array);
+  uint8_t tmp_array2[height][width];
+  resize_array(width/TILESET_SCALE, height/TILESET_SCALE, width, height, tmp_array, tmp_array2, true);
+  uint8_t glfw_array[height][width*3];
+  array_to_glfw_rgb(width, height, tmp_array2, glfw_array, pal);
+  glViewport(0, 0, width, height);
+
+  //glfwGetFramebufferSize(window, &width, &height);
   glClear(GL_COLOR_BUFFER_BIT);
 
-  glDrawPixels(8*TILES_PER_ROW, 8*TILES_PER_ROW, GL_RED, GL_UNSIGNED_BYTE, window_RGBData);
+  glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, glfw_array);
 
   glfwSwapBuffers(window);
 

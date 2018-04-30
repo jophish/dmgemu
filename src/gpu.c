@@ -140,6 +140,8 @@ int draw_scanline(emu *gb_emu_p) {
 	y_index = sprite.y_flip ? (sprite_h - 1 - coord_y) : (coord_y);
 	x_index = sprite.x_flip ? (PX_PER_ROW - 1 - (coord_x_lo + j)) : (coord_x_lo + j);
 	uint8_t sprite_px = gb_gpu_p->tileset[sprite.tile_no][y_index][x_index];
+	if (sprite_px == 0)
+	  continue;
 	tmp_px.px_col = translate_palette_px(palette, sprite_px);
 	tmp_px.priority = sprite.priority;
 	pixels_to_write[pixel_count] = tmp_px;
@@ -176,7 +178,10 @@ int coord_to_bg_pixel(emu *gb_emu_p, uint16_t x, uint16_t y) {
   else
     map_data_st_addr = BG_MAP_DATA_2_START;
 
-  uint8_t tile_index = read_8(gb_emu_p, map_data_st_addr + tile_no);
+  int tile_index = read_8(gb_emu_p, map_data_st_addr + tile_no);
+  if ((lcdc_val & BG_CHAR_DATA_SELECT_FLAG) == 0) {
+    tile_index = 256 + byte_to_2c(tile_index);
+  }
 
   //printf("tile no: 0x%02x\n", tile_no);
   //printf("tile index: 0x%02x\n", tile_index);
@@ -348,3 +353,21 @@ int read_gpu_reg(gpu *gb_gpu_p, uint16_t addr) {
   return 0;
 }
 
+int get_tileset_array_size(int tiles_per_row, int *width, int *height) {
+  *width = PX_PER_ROW*tiles_per_row;
+  *height = PX_PER_ROW*(NUM_TILES/tiles_per_row + 1);
+  return 0;
+}
+
+int get_tileset(emu *gb_emu_p, int tiles_per_row, int width, int height, uint8_t tileset_array[height][width]) {
+  // need to run through palette
+  gpu *gb_gpu_p = &(gb_emu_p->gb_gpu);
+  for (int i = 0; i < NUM_TILES; i++) {
+    for (int j = 0; j < PX_PER_ROW; j++) {
+      for (int k = 0; k < PX_PER_ROW; k++) {
+	tileset_array[PX_PER_ROW*(i/tiles_per_row) + j][PX_PER_ROW*(i % tiles_per_row) + k] = translate_palette_px(gb_gpu_p->gb_gpu_regs.reg_obp0,  gb_gpu_p->tileset[i][j][k]);
+      }
+    }
+  }
+  return 0;
+}
