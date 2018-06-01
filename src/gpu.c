@@ -360,6 +360,7 @@ int get_tileset_array_size(int tiles_per_row, int *width, int *height) {
 }
 
 int get_tileset(emu *gb_emu_p, int tiles_per_row, int width, int height, uint8_t tileset_array[height][width]) {
+  memset(tileset_array, 0, width*height);
   // need to run through palette
   gpu *gb_gpu_p = &(gb_emu_p->gb_gpu);
   for (int i = 0; i < NUM_TILES; i++) {
@@ -369,5 +370,6 @@ int get_tileset(emu *gb_emu_p, int tiles_per_row, int width, int height, uint8_t
       }
     }
   }
+
   return 0;
 }
